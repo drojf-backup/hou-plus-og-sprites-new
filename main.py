@@ -11,13 +11,25 @@ from typing import List
 
 
 class CallData:
-    def __init__(self, line):
+    def __init__(self, line, is_mod):
         self.line = line
         self.type = None #type
         self.matching_key = None #lookup_key
+        self.debug_character = None
 
-    # def from_line(line) -> 'CallData':
-    #     return CallData(line, type= None, lookup_key=None)
+        if is_mod:
+            match = modSpritePathCharacterNameRegex.search(line)
+            if match:
+                # 'sprite' or 'portrait'
+                self.type = match.group(1)
+                mod_character = match.group(2)
+                self.debug_character = mod_character
+
+                if mod_character in mod_to_name:
+                    self.matching_key = name_to_og[mod_to_name[mod_character]]
+                else:
+                    raise Exception(f"No mod character {mod_character} in database for line {line}")
+
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -69,7 +81,7 @@ KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
 
-should_process_list = [
+SHOULD_PROCESS_LIST = [
     '"bg/',
     '"chapter/',
     '"credits/',
@@ -126,6 +138,16 @@ og_to_name = {
     'kameda': KAMEDA
     #'nit': 
 }
+
+def reverse_dict(d: dict[str, str]) -> dict[str, str]:
+    reversed = {}
+
+    for key, value in d.items():
+        reversed[value] = key
+
+    return reversed
+
+name_to_og = reverse_dict(og_to_name)
 
 def get_vanilla_only(log_lines):
 
@@ -200,36 +222,54 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> List[str]:
 
 
 def line_has_graphics(line):
-    for string_start in should_process_list:
+    for string_start in SHOULD_PROCESS_LIST:
         if string_start in line:
             return True
         
     return False
 
-def parse_line(mod_script_dir, mod_script_file, all_lines, line_index, line):
-    # For now, only process lines with these key words in them:
-    # is_draw_call = 'ModDrawCharacter' in line or 'DrawBustshot' in line or 'DrawScene' in line:
-    # if not is_draw_call:
-    #     return
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str):
+    # for now just ignore commented lines
+    line = line.split('//', maxsplit=1)[0]
     
-
+    # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
     if not line_has_graphics(line):
         return
-
-
-    # sprite_type, mod_character = get_sprite_info()
-
-    # if sprite_type is None:
-    #     return
     
-    mod = CallData(line)
-    print(f"Line No: {line_index + 1} Type: {mod.type} Matching Key: {mod.matching_key} Line: {line.strip()}")
+    mod = CallData(line, is_mod = True)
+    print(f"Line No: {line_index + 1} Type: {mod.type} Key: {mod.matching_key} Char: {mod.debug_character} Line: {line.strip()}")
 
     # Now use git to extract matching lines from the original game
     og_lines = get_original_lines(mod_script_dir, mod_script_file, line_index + 1)
-    for line in og_lines:
-        og = CallData(line)
-        print(f"Type: {og.type} Matching Key: {og.matching_key} Line: {line.strip()}")
+    og_call_data = [CallData(l, is_mod = False) for l in og_lines]
+
+    for og in og_call_data:
+        print(f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}")
+
+        if not og.line.startswith('+'):
+            raise Exception(f"git output for {og.line} does not start with a +")
+
+
+    print()
+
+    # Now try to match lines using various methods
+    matched_line = None
+
+    # if len(og_lines) == 1:
+    #     matched_line = og_lines[0]
+    #     print(f"Matched as only one match: {matched_line}")     
+
+    if mod.matching_key:
+        for og in og_call_data:        
+            if mod.matching_key in og.line:
+                matched_line = og.line
+                print(f"Matched by matching key: {matched_line}")     
+
+
+    if matched_line is None:
+        print("Failed to match line")
+    
+
 
 
     print('----------------------------------------')
