@@ -14,6 +14,8 @@ outputLineAll = re.compile(r"OutputLineAll\([^;]*;")
 
 outputLineRegex = re.compile(r"OutputLine\(\s*[^,]*,\s*\"(.*)\"\s*,")
 
+spritePathRegex = re.compile(r'\"sprites/([^/]+)')
+
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'C:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 mod_script_file = 'mehagashi.txt'
@@ -29,26 +31,6 @@ modded_input_file = os.path.join(mod_script_dir, mod_script_file)
 #             return text
 
 #     return None
-
-
-def parse_line(mod_script_dir, mod_script_file, all_lines, line_index, line):
-    if 'ModDrawCharacter' in line:
-        print(f"Line No: {line_index + 1}")
-        print(line.strip())
-        original_lines = get_original_line(mod_script_dir, mod_script_file, line_index + 1)
-        for line in original_lines:
-            print(line.strip())
-        print('----------------------------------------')
-
-
-    # output_line_all_match = outputLineAll.search(line)
-    # if output_line_all_match:
-    #     print('Got outputLineAll')
-    #     return
-
-    # jp_text = get_output_line_first_text(line)
-    # if jp_text:
-    #     print(jp_text)
 
 
 
@@ -88,15 +70,27 @@ def get_original_line(mod_script_dir, mod_script_file, line_no) -> List[str]:
     return vanilla_lines
 
 
+def parse_line(mod_script_dir, mod_script_file, all_lines, line_index, line):
+    if 'ModDrawCharacter' in line:
+        print(f"Line No: {line_index + 1}")
+        print(line.strip())
+        original_lines = get_original_line(mod_script_dir, mod_script_file, line_index + 1)
+
+        for line in original_lines:
+            # determine what character is being displayed
+            match = spritePathRegex.search(line)
+            if match:
+                character = match.group(1)
+                print(f'{character}: {line.strip()}')
+            else:
+                print(line)
+
+        print('----------------------------------------')
+
+
 with open(modded_input_file, encoding='utf-8') as f:
     all_lines = f.readlines()
     for line_index, line in enumerate(all_lines):
         parse_line(mod_script_dir, mod_script_file, all_lines, line_index, line)
-
-
-
-# p.returncode
-# print(p.stdout)
-# print(p.stderr)
 
 
