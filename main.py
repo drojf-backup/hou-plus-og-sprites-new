@@ -13,8 +13,8 @@ from typing import List
 class CallData:
     def __init__(self, line, is_mod):
         self.line = line
-        self.type = None #type
-        self.matching_key = None #lookup_key
+        self.type = None  # type
+        self.matching_key = None  # lookup_key
         self.debug_character = None
 
         if is_mod:
@@ -28,8 +28,8 @@ class CallData:
                 if mod_character in mod_to_name:
                     self.matching_key = name_to_og[mod_to_name[mod_character]]
                 else:
-                    raise Exception(f"No mod character {mod_character} in database for line {line}")
-
+                    raise Exception(f"No mod character {
+                                    mod_character} in database for line {line}")
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -39,7 +39,8 @@ outputLineRegex = re.compile(r"OutputLine\(\s*[^,]*,\s*\"(.*)\"\s*,")
 
 ogSpritePathCharacterNameRegex = re.compile(r'"sprites/([^/]+)')
 
-modSpritePathCharacterNameRegex = re.compile(r'"((?:sprite)|(?:portrait))/([a-zA-Z]*)')
+modSpritePathCharacterNameRegex = re.compile(
+    r'"((?:sprite)|(?:portrait))/([a-zA-Z]*)')
 
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
@@ -136,8 +137,9 @@ og_to_name = {
     'irie': IRIE,
     'mob': MOB_CHARACTER,
     'kameda': KAMEDA
-    #'nit': 
+    # 'nit':
 }
+
 
 def reverse_dict(d: dict[str, str]) -> dict[str, str]:
     reversed = {}
@@ -147,7 +149,9 @@ def reverse_dict(d: dict[str, str]) -> dict[str, str]:
 
     return reversed
 
+
 name_to_og = reverse_dict(og_to_name)
+
 
 def get_vanilla_only(log_lines):
 
@@ -176,15 +180,13 @@ def get_vanilla_only(log_lines):
             got_commit = True
 
     return diff_lines
-            
 
 
 def get_original_lines(mod_script_dir, mod_script_file, line_no) -> List[str]:
-    p = subprocess.run(["git", 'log', f'-L{line_no},+1:{mod_script_file}'], capture_output=True, text=True, shell=True, cwd=mod_script_dir)
+    p = subprocess.run(["git", 'log', f'-L{line_no},+1:{mod_script_file}'],
+                       capture_output=True, text=True, shell=True, cwd=mod_script_dir)
     vanilla_lines = get_vanilla_only(p.stdout.splitlines())
     return vanilla_lines
-
-
 
 
 # def get_sprite_info():
@@ -192,7 +194,7 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> List[str]:
 #     is_draw_call = 'ModDrawCharacter' in line or 'DrawBustshot' in line
 #     if not is_draw_call:
 #         return None, None
-        
+
 
 #     match = modSpritePathCharacterNameRegex.search(line)
 #     if match:
@@ -204,7 +206,7 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> List[str]:
 
 #         if mod_character not in mod_to_name:
 #             raise Exception(f"No mod character {mod_character} in database")
-        
+
 #         return sprite_type, mod_character
 
 
@@ -225,30 +227,34 @@ def line_has_graphics(line):
     for string_start in SHOULD_PROCESS_LIST:
         if string_start in line:
             return True
-        
+
     return False
+
 
 def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str):
     # for now just ignore commented lines
     line = line.split('//', maxsplit=1)[0]
-    
+
     # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
     if not line_has_graphics(line):
         return
-    
-    mod = CallData(line, is_mod = True)
-    print(f"Line No: {line_index + 1} Type: {mod.type} Key: {mod.matching_key} Char: {mod.debug_character} Line: {line.strip()}")
+
+    mod = CallData(line, is_mod=True)
+    print(f"Line No: {line_index + 1} Type: {mod.type} Key: {
+          mod.matching_key} Char: {mod.debug_character} Line: {line.strip()}")
 
     # Now use git to extract matching lines from the original game
-    og_lines = get_original_lines(mod_script_dir, mod_script_file, line_index + 1)
-    og_call_data = [CallData(l, is_mod = False) for l in og_lines]
+    og_lines = get_original_lines(
+        mod_script_dir, mod_script_file, line_index + 1)
+    og_call_data = [CallData(l, is_mod=False) for l in og_lines]
 
     for og in og_call_data:
-        print(f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}")
+        print(
+            f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}")
 
         if not og.line.startswith('+'):
-            raise Exception(f"git output for {og.line} does not start with a +")
-
+            raise Exception(f"git output for {
+                            og.line} does not start with a +")
 
     print()
 
@@ -257,24 +263,18 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     # if len(og_lines) == 1:
     #     matched_line = og_lines[0]
-    #     print(f"Matched as only one match: {matched_line}")     
+    #     print(f"Matched as only one match: {matched_line}")
 
     if mod.matching_key:
-        for og in og_call_data:        
+        for og in og_call_data:
             if mod.matching_key in og.line:
                 matched_line = og.line
-                print(f"Matched by matching key: {matched_line}")     
-
+                print(f"Matched by matching key: {matched_line}")
 
     if matched_line is None:
         print("Failed to match line")
-    
-
-
 
     print('----------------------------------------')
-
-
 
     # if 'ModDrawCharacter' in line or 'DrawBustshot' in line:
     #     match = modSpritePathCharacterNameRegex.search(line)
@@ -307,12 +307,8 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     #     effect_match = modEffectPathRegex.search(line)
 
 
-
-
-
 with open(modded_input_file, encoding='utf-8') as f:
     all_lines = f.readlines()
     for line_index, line in enumerate(all_lines):
-        parse_line(mod_script_dir, mod_script_file, all_lines, line_index, line)
-
-
+        parse_line(mod_script_dir, mod_script_file,
+                   all_lines, line_index, line)
