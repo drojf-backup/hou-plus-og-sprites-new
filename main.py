@@ -18,13 +18,21 @@ class CallData:
         self.debug_character = None
 
         if is_mod:
+            # Assume the line is a graphics call. Look for a graphics path like "sprite/kei7_warai_" or "portrait/kameda1b_odoroki_" using regex
             match = modSpritePathCharacterNameRegex.search(line)
             if match:
-                # 'sprite' or 'portrait'
+                # Get the sprite type (containing folder), either 'sprite' or 'portrait'
                 self.type = match.group(1)
+                # Get the character name, like kei7 or kameda1b. The expression part is discarded.
                 mod_character = match.group(2)
                 self.debug_character = mod_character
 
+                # To cope with the character name in the modded game and OG game being different,
+                # normalize the names
+                #
+                # Do this by mapping the modded character name to a normalized name, eg 'ri'(mod)->'rika'(normalized)
+                # Then map the normalized name to the OG name, eg 'rika'(normalized)->'rika'(og)
+                # The 'matching_key' is then set to the OG name, so we can cross check it against the earlier git commit of the og game
                 if mod_character in mod_to_name:
                     self.matching_key = name_to_og[mod_to_name[mod_character]]
                 else:
@@ -232,6 +240,7 @@ def line_has_graphics(line):
 
 
 def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str):
+    """This function expects a modded script line as input, as well other arguments describing where the line is from"""
     # for now just ignore commented lines
     line = line.split('//', maxsplit=1)[0]
 
@@ -239,6 +248,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     if not line_has_graphics(line):
         return
 
+    # Convert the line into a CallData object
     mod = CallData(line, is_mod=True)
     print(f"Line No: {line_index + 1} Type: {mod.type} Key: {
           mod.matching_key} Char: {mod.debug_character} Line: {line.strip()}")
