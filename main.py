@@ -10,12 +10,27 @@ import subprocess
 from typing import List
 
 
+class Statistics:
+    def __init__(self):
+        self.match_ok = 0
+        self.match_fail = 0
+
+    def total(self):
+        return self.match_ok + self.match_fail
+
+
 class CallData:
     def __init__(self, line, is_mod):
         self.line = line
         self.type = None  # type
         self.matching_key = None  # lookup_key
         self.debug_character = None
+        self.path = get_graphics_on_line(line, is_mod)
+        self.name = self.path.split('/')[-1]
+
+        if self.path is None:
+            raise Exception(
+                f"Error (is_mod: {is_mod}): Couldn't get path from line {line}")
 
         if is_mod:
             # Assume the line is a graphics call. Look for a graphics path like "sprite/kei7_warai_" or "portrait/kameda1b_odoroki_" using regex
@@ -90,25 +105,65 @@ KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
 
-SHOULD_PROCESS_LIST = [
-    '"bg/',
-    '"chapter/',
-    '"credits/',
-    '"effect/',
-    '"omake/',
-    '"portrait/',
-    '"scene/',
-    '"sprite/',
-    '"title/'
-    '"red"',
-    '"black"',
-    '"filter_hanyu"',
-    '"transparent"',
-    '"white"',
-    '"windo_filter"',
-    '"windo_filter_adv"',
+def partial_path_to_regex(filenamefolder_list):
+    output_list = []
+    for item in filenamefolder_list:
+        complete_regex = f'"({item}[^"]*)"'
+        # print(complete_regex)
+        output_list.append(re.compile(complete_regex))
+    return output_list
+
+
+MOD_CG_LIST = [
+    'background/',
+    'black',
+    'chapter/',
+    'credits/',
+    'effect/',
+    'filter_hanyu',
+    'omake/',
+    'portrait/',
+    'red',
+    'scene/',
+    'sprite/',
+    'title/',
+    'transparent',
+    'white',
+    'windo_filter',
+    'windo_filter_adv',
+    'windo_filter_nvladv',
 ]
 
+OG_CG_LIST = [
+    'bg/',
+    'black',
+    'chapter/',
+    'cinema_window',
+    'cinema_window_name',
+    'credits/',
+    'effect/',
+    'furiker_a',
+    'furiker_b',
+    'hanyuu_background',
+    'img/',
+    'no_data',
+    'omake/',
+    'sprites/',
+    'title/',
+    'white',
+    'windo_filter',
+]
+
+OG_CG_REGEX = partial_path_to_regex(OG_CG_LIST)  # type: List[re.Pattern]
+MOD_CG_REGEX = partial_path_to_regex(MOD_CG_LIST)  # type: List[re.Pattern]
+
+
+# for item in OG_TO_REGEX:
+#     complete_regex = f'"({item}[^"]*)"'
+#     print(complete_regex)
+#     OG_SHOULD_PROCESS_REGEX.append(
+#         re.compile(complete_regex)
+#     )
 
 mod_to_name = {
     're': RENA,
@@ -232,15 +287,28 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], 
 #     return None, None
 
 
-def line_has_graphics(line):
-    for string_start in SHOULD_PROCESS_LIST:
-        if string_start in line:
-            return True
+# returns None if no graphics found!
+def get_graphics_on_line(line, is_mod) -> str:
+    regex_list = OG_CG_REGEX
+    if is_mod:
+        regex_list = MOD_CG_REGEX
 
-    return False
+    for re in regex_list:
+        match = re.search(line)
+        if match:
+            return match.group(1)
+
+    return None
 
 
-def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str):
+def line_has_graphics(line, is_mod):
+    if get_graphics_on_line(line, is_mod) is None:
+        return False
+    else:
+        return True
+
+
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
     print_data = ""
 
@@ -248,7 +316,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     line = line.split('//', maxsplit=1)[0]
 
     # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
-    if not line_has_graphics(line):
+    if not line_has_graphics(line, is_mod=True):
         return
 
     # Convert the line into a CallData object
@@ -261,12 +329,30 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         mod_script_dir, mod_script_file, line_index + 1)
 
     print_data += ">> Raw Git Log Output (vanilla -> mod) <<\n"
-    for line in og_lines:
-        print_data += line + "\n"
+    for l in og_lines:
+        print_data += l + "\n"
     # print_data += raw_git_log_output
     print_data += ">> END Git Log Output <<\n"
 
-    og_call_data = [CallData(l, is_mod=False) for l in og_lines]
+    og_call_data = []
+    for l in og_lines:
+        # Ignore lines which don't have graphics
+        if line_has_graphics(l, is_mod=False):
+            og_call_data.append(CallData(l, is_mod=False))
+
+    if len(og_call_data) == 0:
+        msg = f'>> No OG graphics for {line}\n'
+
+        if len(og_lines) > 0:
+            msg += 'OG lines were:\n'
+            for l in og_lines:
+                msg += f"{l}\n"
+
+        # print(msg)
+        print_data += msg
+        return print_data
+
+    # og_call_data = [CallData(l, is_mod=False) for l in og_lines]
 
     for og in og_call_data:
         print_data += (
@@ -291,8 +377,19 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
                 matched_line = og.line
                 print_data += (f"Matched by matching key: {matched_line}\n")
 
+    # Try matching by same name match
+    if matched_line is None:
+        for og in og_call_data:
+            if og.name == mod.name:
+                print(f"Matched by name '{og.name}': {mod.path} -> {og.path}")
+                matched_line = og.line
+                break
+
     if matched_line is None:
         print_data += ("Failed to match line\n")
+        statistics.match_fail += 1
+    else:
+        statistics.match_ok += 1
 
     print_data += ('----------------------------------------\n')
 
@@ -329,12 +426,22 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     return print_data
 
 
+stats = Statistics()
+
+max_lines = 1000
+
 with open('debug_output.txt', 'w', encoding='utf-8') as out:
     with open(modded_input_file, encoding='utf-8') as f:
         all_lines = f.readlines()
         for line_index, line in enumerate(all_lines):
+            if line_index > max_lines:
+                break
+
             out.write(line)
             print_data = parse_line(mod_script_dir, mod_script_file,
-                                    all_lines, line_index, line)
+                                    all_lines, line_index, line, stats)
             if print_data is not None:
                 out.write(print_data)
+
+
+print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
