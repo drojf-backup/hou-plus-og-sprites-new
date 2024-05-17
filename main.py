@@ -190,11 +190,12 @@ def get_vanilla_only(log_lines):
     return diff_lines
 
 
-def get_original_lines(mod_script_dir, mod_script_file, line_no) -> List[str]:
+def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], str):
     p = subprocess.run(["git", 'log', f'-L{line_no},+1:{mod_script_file}'],
                        capture_output=True, text=True, shell=True, cwd=mod_script_dir)
-    vanilla_lines = get_vanilla_only(p.stdout.splitlines())
-    return vanilla_lines
+    raw_output = p.stdout
+    vanilla_lines = get_vanilla_only(raw_output.splitlines())
+    return vanilla_lines, raw_output
 
 
 # def get_sprite_info():
@@ -241,6 +242,8 @@ def line_has_graphics(line):
 
 def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
+    print_data = ""
+
     # for now just ignore commented lines
     line = line.split('//', maxsplit=1)[0]
 
@@ -250,23 +253,30 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     # Convert the line into a CallData object
     mod = CallData(line, is_mod=True)
-    print(f"Line No: {line_index + 1} Type: {mod.type} Key: {
-          mod.matching_key} Char: {mod.debug_character} Line: {line.strip()}")
+    print_data += (f"Line No: {line_index + 1} Type: {mod.type} Key: {
+                   mod.matching_key} Character: {mod.debug_character} Line: {line.strip()}\n")
 
     # Now use git to extract matching lines from the original game
-    og_lines = get_original_lines(
+    og_lines, raw_git_log_output = get_original_lines(
         mod_script_dir, mod_script_file, line_index + 1)
+
+    print_data += ">> Raw Git Log Output (vanilla -> mod) <<\n"
+    for line in og_lines:
+        print_data += line + "\n"
+    # print_data += raw_git_log_output
+    print_data += ">> END Git Log Output <<\n"
+
     og_call_data = [CallData(l, is_mod=False) for l in og_lines]
 
     for og in og_call_data:
-        print(
-            f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}")
+        print_data += (
+            f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}\n")
 
         if not og.line.startswith('+'):
             raise Exception(f"git output for {
                             og.line} does not start with a +")
 
-    print()
+    print_data += ("\n")
 
     # Now try to match lines using various methods
     matched_line = None
@@ -279,12 +289,12 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         for og in og_call_data:
             if mod.matching_key in og.line:
                 matched_line = og.line
-                print(f"Matched by matching key: {matched_line}")
+                print_data += (f"Matched by matching key: {matched_line}\n")
 
     if matched_line is None:
-        print("Failed to match line")
+        print_data += ("Failed to match line\n")
 
-    print('----------------------------------------')
+    print_data += ('----------------------------------------\n')
 
     # if 'ModDrawCharacter' in line or 'DrawBustshot' in line:
     #     match = modSpritePathCharacterNameRegex.search(line)
@@ -316,9 +326,15 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     # else:
     #     effect_match = modEffectPathRegex.search(line)
 
+    return print_data
 
-with open(modded_input_file, encoding='utf-8') as f:
-    all_lines = f.readlines()
-    for line_index, line in enumerate(all_lines):
-        parse_line(mod_script_dir, mod_script_file,
-                   all_lines, line_index, line)
+
+with open('debug_output.txt', 'w', encoding='utf-8') as out:
+    with open(modded_input_file, encoding='utf-8') as f:
+        all_lines = f.readlines()
+        for line_index, line in enumerate(all_lines):
+            out.write(line)
+            print_data = parse_line(mod_script_dir, mod_script_file,
+                                    all_lines, line_index, line)
+            if print_data is not None:
+                out.write(print_data)
