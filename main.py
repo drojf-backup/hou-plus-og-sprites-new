@@ -13,6 +13,12 @@ from typing import List
 import path_util
 
 
+class ModToOGMatch:
+    def __init__(self, og_calldata, og_path) -> None:
+        self.og_calldata = og_calldata
+        self.og_path = og_path
+
+
 class Statistics:
     def __init__(self):
         self.match_ok = 0
@@ -368,7 +374,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     print_data += ("\n")
 
     # Now try to match lines using various methods
-    matched_line = None
+    mod_to_og_match = None
 
     # if len(og_lines) == 1:
     #     matched_line = og_lines[0]
@@ -377,19 +383,29 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     if mod.matching_key:
         for og in og_call_data:
             if mod.matching_key in og.line:
-                matched_line = og.line
-                print_data += (f"Matched by matching key: {matched_line}\n")
+                mod_to_og_match = ModToOGMatch(og, None)
+                print_data += (f"Matched by matching key: {mod_to_og_match}\n")
 
     # Try matching by same name match
-    if matched_line is None:
+    if mod_to_og_match is None:
         for og in og_call_data:
             if og.name == mod.name:
-                print(f"Matched by name '{og.name}': {mod.path} -> {og.path}")
-                matched_line = og.line
+                print(f"Matched by name in git log '{
+                      og.name}': {mod.path} -> {og.path}")
+                mod_to_og_match = ModToOGMatch(og, None)
                 break
 
-    if matched_line is None:
+    # Try matching by same name in OG files
+    if mod_to_og_match is None:
+        if mod.name in og_bg_lc_name_to_path:
+            og_path = og_bg_lc_name_to_path[mod.name]
+            print(f"Matched by name in og files '{
+                  mod.name}': {mod.path} -> {og_path}")
+            mod_to_og_match = ModToOGMatch(None, og_path)
+
+    if mod_to_og_match is None:
         print_data += ("Failed to match line\n")
+        print(f"Failed to match line: {line.strip()}")
         statistics.match_fail += 1
     else:
         statistics.match_ok += 1
