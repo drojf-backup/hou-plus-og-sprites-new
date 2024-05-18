@@ -9,6 +9,9 @@ import csv
 import subprocess
 from typing import List
 
+# User imports
+import path_util
+
 
 class Statistics:
     def __init__(self):
@@ -308,7 +311,7 @@ def line_has_graphics(line, is_mod):
         return True
 
 
-def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics):
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str]):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
     print_data = ""
 
@@ -430,6 +433,12 @@ stats = Statistics()
 
 max_lines = 1000
 
+unmodded_cg = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
+
+og_bg_lc_name_to_path = path_util.lc_name_to_path(
+    unmodded_cg, exclude=['sprites/'])
+
+
 with open('debug_output.txt', 'w', encoding='utf-8') as out:
     with open(modded_input_file, encoding='utf-8') as f:
         all_lines = f.readlines()
@@ -439,7 +448,7 @@ with open('debug_output.txt', 'w', encoding='utf-8') as out:
 
             out.write(line)
             print_data = parse_line(mod_script_dir, mod_script_file,
-                                    all_lines, line_index, line, stats)
+                                    all_lines, line_index, line, stats, og_bg_lc_name_to_path)
             if print_data is not None:
                 out.write(print_data)
 
