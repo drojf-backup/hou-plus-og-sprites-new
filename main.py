@@ -77,7 +77,7 @@ modSpritePathCharacterNameRegex = re.compile(
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
-mod_script_dir = 'C:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
+mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 mod_script_file = 'mehagashi.txt'
 
 modded_input_file = os.path.join(mod_script_dir, mod_script_file)
@@ -447,9 +447,12 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
 stats = Statistics()
 
-max_lines = 1000
+max_lines = None
 
-unmodded_cg = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
+unmodded_cg = 'D:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
+
+if not os.path.exists(unmodded_cg):
+    raise Exception(f"Unmodded CG path doesn't exist: {unmodded_cg}")
 
 og_bg_lc_name_to_path = path_util.lc_name_to_path(
     unmodded_cg, exclude=['sprites/'])
@@ -459,7 +462,7 @@ with open('debug_output.txt', 'w', encoding='utf-8') as out:
     with open(modded_input_file, encoding='utf-8') as f:
         all_lines = f.readlines()
         for line_index, line in enumerate(all_lines):
-            if line_index > max_lines:
+            if max_lines != None and line_index > max_lines:
                 break
 
             out.write(line)
