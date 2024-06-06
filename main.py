@@ -317,7 +317,7 @@ def line_has_graphics(line, is_mod):
         return True
 
 
-def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str]):
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str]):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
     print_data = ""
 
@@ -395,6 +395,20 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
                 mod_to_og_match = ModToOGMatch(og, None)
                 break
 
+    # Try matching by manual matches
+    # Eg 'oki_pool2' : 'pool2' which comes from the files:
+    #  "background/oki_pool2" -> "bg/2021_add/pool2"
+    if mod_to_og_match is None:
+        if mod.name in manual_name_matching:
+            expected_og_name = manual_name_matching[mod.name]
+            for og in og_call_data:
+                if og.name == expected_og_name:
+                    mod_to_og_match = ModToOGMatch(og, None)
+                    msg = f"Matched by manual name match '{mod.name}' -> '{expected_og_name}' {mod_to_og_match}\n"
+                    print(msg)
+                    print_data += msg
+                    break
+
     # Try matching by same name in OG files
     if mod_to_og_match is None:
         if mod.name in og_bg_lc_name_to_path:
@@ -405,7 +419,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     if mod_to_og_match is None:
         print_data += ("Failed to match line\n")
-        print(f"Failed to match line: {line.strip()}")
+        print(f"Failed to match '{mod.name}' line: {line.strip()}")
         statistics.match_fail += 1
     else:
         statistics.match_ok += 1
@@ -444,6 +458,15 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     return print_data
 
+manual_name_matching = {
+    'oki_pool1' : 'pool1',
+    'oki_pool2' : 'pool2',
+    'oki_pool3' : 'pool3',
+    # 'chika_shisetsu': 'ko1',
+    # Effect images...should these be handled differently?
+    'hara': 'ara_d4',
+    'hton': 'ton_d5a',
+}
 
 stats = Statistics()
 
@@ -467,7 +490,7 @@ with open('debug_output.txt', 'w', encoding='utf-8') as out:
 
             out.write(line)
             print_data = parse_line(mod_script_dir, mod_script_file,
-                                    all_lines, line_index, line, stats, og_bg_lc_name_to_path)
+                                    all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
             if print_data is not None:
                 out.write(print_data)
 
