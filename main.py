@@ -63,18 +63,29 @@ class Statistics:
     def total(self):
         return self.match_ok + self.match_fail
 
-    def add_match(self, mod_call_data: CallData, og_call_data: CallData):
-        print(f"{mod_call_data.path} -> {og_call_data.path}")
+    def add_match(self, mod_call_data: CallData, og_match: ModToOGMatch):
+        if og_match.og_calldata is None:
+            og_name = Path(og_match.og_path).stem
+        else:
+            og_name = og_match.og_calldata.name
+
+        print(f"{mod_call_data.path} -> {og_name}")
 
         if mod_call_data.path not in self.count_statistics:
             self.count_statistics[mod_call_data.path] = {}
 
         mod_dict = self.count_statistics[mod_call_data.path]
 
-        if og_call_data.path not in mod_dict:
-            mod_dict[og_call_data.path] = []
+        if og_name not in mod_dict:
+            mod_dict[og_name] = []
 
-        mod_dict[og_call_data.path].append(og_call_data)
+        mod_dict[og_name].append(og_match)
+
+    def save_as_csv(self):
+        for mod_path, og_results in self.count_statistics.items():
+            print(f'{mod_path}:')
+            for og_path, og_list in og_results.items():
+                print(f'\t{mod_path} -> {og_path} = {len(og_list)}')
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -94,16 +105,6 @@ mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Up
 mod_script_file = 'mehagashi.txt'
 
 modded_input_file = os.path.join(mod_script_dir, mod_script_file)
-
-# def get_output_line_first_text(line):
-#     match = outputLineRegex.search(line)
-#     if match:
-#         text = match.group(1)
-#         text = text.replace('\\n', '')
-#         if text:
-#             return text
-
-#     return None
 
 RENA = 'rena'
 KEIICHI = 'keiichi'
@@ -126,15 +127,10 @@ YOS_SILHOUETTE = 'yos_silhouette'
 KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
-
-def partial_path_to_regex(filenamefolder_list):
-    output_list = []
-    for item in filenamefolder_list:
-        complete_regex = f'"({item}[^"]*)"'
-        # print(complete_regex)
-        output_list.append(re.compile(complete_regex))
-    return output_list
-
+def partial_path_to_regex(filenamefolder_list) -> re.Pattern:
+    item = '|'.join(filenamefolder_list)
+    complete_regex = f'"((?:{item})[^"]*)"'
+    return re.compile(complete_regex)
 
 MOD_CG_LIST = [
     'background/',
@@ -311,14 +307,13 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], 
 
 # returns None if no graphics found!
 def get_graphics_on_line(line, is_mod) -> str:
-    regex_list = OG_CG_REGEX
+    regex = OG_CG_REGEX
     if is_mod:
-        regex_list = MOD_CG_REGEX
+        regex = MOD_CG_REGEX
 
-    for re in regex_list:
-        match = re.search(line)
-        if match:
-            return match.group(1)
+    match = regex.search(line)
+    if match:
+        return match.group(1)
 
     return None
 
@@ -436,7 +431,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         statistics.match_fail += 1
     else:
         statistics.match_ok += 1
-        statistics.add_match(mod, og)
+        statistics.add_match(mod, mod_to_og_match)
 
     print_data += ('----------------------------------------\n')
 
@@ -510,3 +505,7 @@ with open('debug_output.txt', 'w', encoding='utf-8') as out:
 
 
 print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
+
+print(stats.count_statistics)
+
+stats.save_as_csv()
