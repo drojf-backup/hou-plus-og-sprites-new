@@ -85,7 +85,7 @@ class Statistics:
     # TODO:
     # Then load in another script and determine final mapping?
     # Also need to scan every possible graphics path in modded game to make sure all paths are covered
-    def save_as_csv(self, output_file_path):
+    def save_as_json(self, output_file_path):
         to_dump = {}
 
         for mod_path, og_results in self.count_statistics.items():
@@ -114,11 +114,6 @@ modSpritePathCharacterNameRegex = re.compile(
 
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
-# unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
-mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
-mod_script_file = 'mehagashi.txt'
-
-modded_input_file = os.path.join(mod_script_dir, mod_script_file)
 
 RENA = 'rena'
 KEIICHI = 'keiichi'
@@ -481,6 +476,36 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     return print_data
 
+def scan_one_script(modded_input_script: str, debug_output_file):
+    with open(modded_input_script, encoding='utf-8') as f:
+        all_lines = f.readlines()
+
+    # Check every line in the modded input script for corresponding og graphics
+    for line_index, line in enumerate(all_lines):
+        if max_lines != None and line_index > max_lines:
+            break
+
+        print_data = parse_line(mod_script_dir, mod_script_file,
+                                all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
+
+        # Print output for debbuging, only if enabled
+        if debug_output_file is not None:
+            debug_output_file.write(line)
+            if print_data is not None:
+                debug_output_file.write(print_data)
+
+
+    # Write the output statistcs .json
+    # print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
+    # print(stats.count_statistics)
+    out_filename = Path(modded_input_script).stem
+    os.makedirs('stats', exist_ok=True)
+    stats.save_as_json(f'stats/{out_filename}.json')
+
+
+
+# with open('debug_output.txt', 'w', encoding='utf-8') as debug_output:
+
 manual_name_matching = {
     'oki_pool1' : 'pool1',
     'oki_pool2' : 'pool2',
@@ -495,6 +520,7 @@ stats = Statistics()
 
 max_lines = None
 
+# Build a mapping from filename -> path for unmodded CGs, except sprites
 unmodded_cg = 'D:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
 
 if not os.path.exists(unmodded_cg):
@@ -504,23 +530,11 @@ og_bg_lc_name_to_path = path_util.lc_name_to_path(
     unmodded_cg, exclude=['sprites/'])
 
 
-with open('debug_output.txt', 'w', encoding='utf-8') as out:
-    with open(modded_input_file, encoding='utf-8') as f:
-        all_lines = f.readlines()
-        for line_index, line in enumerate(all_lines):
-            if max_lines != None and line_index > max_lines:
-                break
+# unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
+mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
+mod_script_file = 'mehagashi.txt'
 
-            out.write(line)
-            print_data = parse_line(mod_script_dir, mod_script_file,
-                                    all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
-            if print_data is not None:
-                out.write(print_data)
+modded_input_script = os.path.join(mod_script_dir, mod_script_file)
 
+scan_one_script(modded_input_script, debug_output_file=None)
 
-print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
-
-print(stats.count_statistics)
-
-os.makedirs('stats', exist_ok=True)
-stats.save_as_csv('stats/test.json')
