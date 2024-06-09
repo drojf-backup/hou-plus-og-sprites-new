@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import hashlib
@@ -81,11 +82,24 @@ class Statistics:
 
         mod_dict[og_name].append(og_match)
 
-    def save_as_csv(self):
+    # TODO:
+    # Then load in another script and determine final mapping?
+    # Also need to scan every possible graphics path in modded game to make sure all paths are covered
+    def save_as_csv(self, output_file_path):
+        to_dump = {}
+
         for mod_path, og_results in self.count_statistics.items():
-            print(f'{mod_path}:')
+            to_dump[mod_path] = {}
+            mod_path_dict = to_dump[mod_path]
             for og_path, og_list in og_results.items():
-                print(f'\t{mod_path} -> {og_path} = {len(og_list)}')
+                mod_path_dict[og_path] = len(og_list)
+
+        json_string = json.dumps(to_dump, sort_keys=True, indent=4)
+        print(json_string)
+
+        with open(output_file_path, 'w', encoding='utf-8') as f:
+            f.write(json_string)
+
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -508,4 +522,5 @@ print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
 
 print(stats.count_statistics)
 
-stats.save_as_csv()
+os.makedirs('stats', exist_ok=True)
+stats.save_as_csv('stats/test.json')
