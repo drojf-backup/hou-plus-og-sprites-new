@@ -19,15 +19,6 @@ class ModToOGMatch:
         self.og_path = og_path
 
 
-class Statistics:
-    def __init__(self):
-        self.match_ok = 0
-        self.match_fail = 0
-
-    def total(self):
-        return self.match_ok + self.match_fail
-
-
 class CallData:
     def __init__(self, line, is_mod):
         self.line = line
@@ -62,6 +53,17 @@ class CallData:
                 else:
                     raise Exception(f"No mod character {
                                     mod_character} in database for line {line}")
+
+class Statistics:
+    def __init__(self):
+        self.match_ok = 0
+        self.match_fail = 0
+
+    def total(self):
+        return self.match_ok + self.match_fail
+
+    def add_match(self, mod_call_data: CallData, og_call_data: CallData):
+        print(f"{mod_call_data.path} -> {og_call_data.path}")
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -423,6 +425,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         statistics.match_fail += 1
     else:
         statistics.match_ok += 1
+        statistics.add_match(mod, og)
 
     print_data += ('----------------------------------------\n')
 
