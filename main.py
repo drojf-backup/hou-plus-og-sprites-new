@@ -13,6 +13,12 @@ from typing import List
 # User imports
 import path_util
 
+missing_character_key = "ERROR_MISSING_CHARACTER"
+
+class GlobalResult:
+    def __init__(self) -> None:
+        self.missing_char_detected = False
+
 
 class ModToOGMatch:
     def __init__(self, og_calldata, og_path) -> None:
@@ -52,14 +58,16 @@ class CallData:
                 if mod_character in mod_to_name:
                     self.matching_key = name_to_og[mod_to_name[mod_character]]
                 else:
-                    raise Exception(f"No mod character {
-                                    mod_character} in database for line {line}")
+                    self.matching_key = f'{missing_character_key}: {mod_character}'
+                    # raise Exception(f"No mod character {
+                    #                 mod_character} in database for line {line}")
 
 class Statistics:
     def __init__(self):
         self.match_ok = 0
         self.match_fail = 0
         self.count_statistics = {} #type: dict[str, dict[str, list[CallData]]]
+        self.missing_character_details = [] #type: list[str]
 
     def total(self):
         return self.match_ok + self.match_fail
@@ -85,7 +93,7 @@ class Statistics:
     # TODO:
     # Then load in another script and determine final mapping?
     # Also need to scan every possible graphics path in modded game to make sure all paths are covered
-    def save_as_json(self, output_file_path):
+    def save_as_json(self, output_file_path, output_missing_characters_path, global_result: GlobalResult):
         to_dump = {}
 
         for mod_path, og_results in self.count_statistics.items():
@@ -100,6 +108,21 @@ class Statistics:
         with open(output_file_path, 'w', encoding='utf-8') as f:
             f.write(json_string)
 
+        missing_chars_path = Path(output_missing_characters_path)
+        if missing_chars_path.exists():
+            missing_chars_path.unlink()
+
+        if self.missing_character_details:
+            global_result.missing_char_detected = True
+            with open(missing_chars_path, 'w', encoding='utf-8') as f:
+                f.writelines(self.missing_character_details)
+
+    def add_missing_character(self, mod_matching_key_with_error: str, missing_character_line: str, og_lines: list[str]):
+        out_string = f'{mod_matching_key_with_error}: {missing_character_line.strip()}\n'
+        for line in og_lines:
+            out_string += f'\t{line.strip()}\n'
+
+        self.missing_character_details.append(out_string)
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -354,6 +377,10 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     og_lines, raw_git_log_output = get_original_lines(
         mod_script_dir, mod_script_file, line_index + 1)
 
+    if mod.matching_key is not None and missing_character_key in mod.matching_key:
+        statistics.add_missing_character(mod.matching_key, line, og_lines)
+        return
+
     print_data += ">> Raw Git Log Output (vanilla -> mod) <<\n"
     for l in og_lines:
         print_data += l + "\n"
@@ -476,7 +503,9 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     return print_data
 
-def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file):
+def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult):
+    stats = Statistics()
+
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
@@ -500,7 +529,7 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
     # print(stats.count_statistics)
     out_filename = Path(mod_script_path).stem
     os.makedirs('stats', exist_ok=True)
-    stats.save_as_json(f'stats/{out_filename}.json')
+    stats.save_as_json(f'stats/{out_filename}.json', f'stats/{out_filename}_missing_chars.txt', global_result)
 
 
 
@@ -516,7 +545,6 @@ manual_name_matching = {
     'hton': 'ton_d5a',
 }
 
-stats = Statistics()
 
 max_lines = None
 
@@ -533,7 +561,11 @@ og_bg_lc_name_to_path = path_util.lc_name_to_path(
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 
+# TODO: add global stats across all items? only write out once all items processed
+global_result = GlobalResult()
+
 for modded_script_path in Path(mod_script_dir).glob('*.txt'):
-    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None)
+    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None, global_result=global_result)
 
-
+if global_result.missing_char_detected:
+    print("<<<<<<<<<<< WARNING: one or more missing from the mod_to_name or og_to_name table, please update or matching will be incomplete! >>>>>>>>>>>>>>")
