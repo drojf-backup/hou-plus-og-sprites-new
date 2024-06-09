@@ -658,7 +658,9 @@ manual_name_matching = {
 }
 
 
+# Modify to only test a subset of the files/each file
 max_lines = None
+pattern = '*.txt'
 
 # Build a mapping from filename -> path for unmodded CGs, except sprites
 unmodded_cg = 'D:/games/steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
@@ -676,7 +678,7 @@ mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Up
 # TODO: add global stats across all items? only write out once all items processed
 global_result = GlobalResult()
 
-for modded_script_path in Path(mod_script_dir).glob('*.txt'):
+for modded_script_path in Path(mod_script_dir).glob(pattern):
     scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None, global_result=global_result)
 
 if global_result.missing_char_detected:
