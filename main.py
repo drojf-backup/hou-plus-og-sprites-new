@@ -476,8 +476,8 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     return print_data
 
-def scan_one_script(modded_input_script: str, debug_output_file):
-    with open(modded_input_script, encoding='utf-8') as f:
+def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file):
+    with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
     # Check every line in the modded input script for corresponding og graphics
@@ -485,7 +485,7 @@ def scan_one_script(modded_input_script: str, debug_output_file):
         if max_lines != None and line_index > max_lines:
             break
 
-        print_data = parse_line(mod_script_dir, mod_script_file,
+        print_data = parse_line(mod_script_dir, mod_script_path,
                                 all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
 
         # Print output for debbuging, only if enabled
@@ -498,7 +498,7 @@ def scan_one_script(modded_input_script: str, debug_output_file):
     # Write the output statistcs .json
     # print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
     # print(stats.count_statistics)
-    out_filename = Path(modded_input_script).stem
+    out_filename = Path(mod_script_path).stem
     os.makedirs('stats', exist_ok=True)
     stats.save_as_json(f'stats/{out_filename}.json')
 
@@ -532,9 +532,8 @@ og_bg_lc_name_to_path = path_util.lc_name_to_path(
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
-mod_script_file = 'mehagashi.txt'
 
-modded_input_script = os.path.join(mod_script_dir, mod_script_file)
+for modded_script_path in Path(mod_script_dir).glob('*.txt'):
+    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None)
 
-scan_one_script(modded_input_script, debug_output_file=None)
 
