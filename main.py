@@ -47,6 +47,15 @@ class CallData:
                 self.type = match.group(1)
                 # Get the character name, like kei7 or kameda1b. The expression part is discarded.
                 mod_character = match.group(2)
+
+                # Special case for mob characters kumi1 and kumi2, whose names don't follow the usual convention
+                # Eg. kumi1_01_0.png and kumi2_01_0.png are different people who appear at the same time
+                if mod_character == 'kumi' and 'kumi1_' in line:
+                    mod_character = 'kumi1'
+
+                if mod_character == 'kumi' and 'kumi2_' in line:
+                    mod_character = 'kumi2'
+
                 self.debug_character = mod_character
 
                 # To cope with the character name in the modded game and OG game being different,
@@ -163,18 +172,30 @@ OKONOGI = 'okonogi'
 OISHI = 'oishi'
 TAKANO = 'takano'
 TETU = 'tetu'
+MURA = 'mura'
+UNE = 'une'
+TAMURA = 'tamura'
+KUMI_1 = 'kumi1'
+KUMI_2 = 'kumi2'
+
+# Only used in staffroom15?
+SATOSHI = 'satoshi'
+TOMITAKE = 'tomitake'
+KASAI = 'kasai'
+AKASAKA = 'akasaka'
 
 # Silhouettes - should these be handled differently?
 MION_SILHOUETTE = 'mion_silhouette'
 RIKA_SILHOUETTE = 'rika_silhouette'
 TON_SILHOUETTE = 'ton_silhouette'
 ARA_SILHOUETTE = 'ara_silhouette'
-
-# Not used Silhouettes?
-NIT_SILHOUETTE = 'nit_silhouette'
-ODA_SILHOUETTE = 'oda_silhouette'
-OKA_SILHOUETTE = 'oka_silhouette'
 YOS_SILHOUETTE = 'yos_silhouette'
+OKA_SILHOUETTE = 'oka_silhouette'
+HOS_SILHOUETTE = 'hos_silhouette'
+ODA_SILHOUETTE = 'oda_silhouette'
+HOT_SILHOUETTE = 'hot_silhouette'
+NIT_SILHOUETTE = 'nit_silhouette'
+
 KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
@@ -236,8 +257,12 @@ MOD_CG_REGEX = partial_path_to_regex(MOD_CG_LIST)  # type: List[re.Pattern]
 
 mod_to_name = {
     're': RENA,
+    # renasen is rena with hatchet, but just mapping to RENA should generally be OK
+    'renasen': RENA,
     'si': SHION,
     'kei': KEIICHI,
+    # keisen is rena with hatchet, but just mapping to RENA should generally be OK
+    'keisen': KEIICHI,
     'ri': RIKA,
     'ha': HANYU,
     'sa': SATOKO,
@@ -249,12 +274,31 @@ mod_to_name = {
     'oisi': OISHI,
     'ta': TAKANO,
     'tetu': TETU,
+    'mura': MURA,
+    'une': UNE,
+    'tamura': TAMURA,
+    # Special case - mob characters with similar name
+    'kumi1': KUMI_1,
+    'kumi2': KUMI_2,
+
+    # Only used in staffroom15?
+    'sato': SATOSHI,
+    'tomi': TOMITAKE,
+    'kasa': KASAI,
+    'aks': AKASAKA,
+
 
     # Silhouettes - should these be handled differently?
     'hmi': MION_SILHOUETTE,
     'hri': RIKA_SILHOUETTE,
     'hton':TON_SILHOUETTE,
     'hara': ARA_SILHOUETTE,
+    'hyos': YOS_SILHOUETTE,
+    'hoka': OKA_SILHOUETTE,
+    'hhos': HOS_SILHOUETTE,
+    'hoda': ODA_SILHOUETTE,
+    'hhot': HOT_SILHOUETTE,
+    'hnit': NIT_SILHOUETTE,
 }
 
 mod_effect_to_name = {
@@ -267,6 +311,9 @@ mod_effect_to_name = {
     'kei': KEI_SILHOUETTE,
     'oyasiro': OYASHIRO_SILHOUETTE,
 }
+
+# TODO: check other chars (eg mo2, mo3, mo4) if they appear in og script
+# or rather, scan OG script for all used sprites, not just mod script
 
 og_to_name = {
     'rena': RENA,
@@ -283,12 +330,30 @@ og_to_name = {
     'oisi': OISHI,
     'takano': TAKANO,
     'tetu': TETU,
+    'mo1': MURA,
+    'une': UNE,
+    'tam': TAMURA,
+    # Special case - mob characters with similar name
+    'mo6': KUMI_1,
+    'mo5': KUMI_2,
+
+    # Only used in staffroom15?
+    'sato': SATOSHI,
+    'tomi': TOMITAKE,
+    'kasa': KASAI,
+    'aks': AKASAKA,
 
     # Silhouettes - should these be handled differently?
     'mio': MION_SILHOUETTE,
     'rik': RIKA_SILHOUETTE,
     'hton':  TON_SILHOUETTE,
     'hara': ARA_SILHOUETTE,
+    'yos': YOS_SILHOUETTE,
+    'oka': OKA_SILHOUETTE,
+    'hos': HOS_SILHOUETTE,
+    'oda': ODA_SILHOUETTE,
+    'hod': HOT_SILHOUETTE,
+    'nit': NIT_SILHOUETTE,
 }
 
 
