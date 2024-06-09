@@ -58,12 +58,23 @@ class Statistics:
     def __init__(self):
         self.match_ok = 0
         self.match_fail = 0
+        self.count_statistics = {} #type: dict[str, dict[str, list[CallData]]]
 
     def total(self):
         return self.match_ok + self.match_fail
 
     def add_match(self, mod_call_data: CallData, og_call_data: CallData):
         print(f"{mod_call_data.path} -> {og_call_data.path}")
+
+        if mod_call_data.path not in self.count_statistics:
+            self.count_statistics[mod_call_data.path] = {}
+
+        mod_dict = self.count_statistics[mod_call_data.path]
+
+        if og_call_data.path not in mod_dict:
+            mod_dict[og_call_data.path] = []
+
+        mod_dict[og_call_data.path].append(og_call_data)
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
