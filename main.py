@@ -114,15 +114,26 @@ class Statistics:
 
         if self.missing_character_details:
             global_result.missing_char_detected = True
+
+            summary = {}
+            for (key, debug_out) in self.missing_character_details:
+                summary[key] = debug_out
+
             with open(missing_chars_path, 'w', encoding='utf-8') as f:
-                f.writelines(self.missing_character_details)
+                for key, value in summary.items():
+                    f.write(f"Missing key: {key}\n")
+                    f.write(f"{value}\n")
+
+                f.write('\n\n\n----------------------------------------------------\n\n\n')
+                for (key, debug_out) in self.missing_character_details:
+                    f.writelines(debug_out)
 
     def add_missing_character(self, mod_matching_key_with_error: str, missing_character_line: str, og_lines: list[str]):
         out_string = f'{mod_matching_key_with_error}: {missing_character_line.strip()}\n'
         for line in og_lines:
             out_string += f'\t{line.strip()}\n'
 
-        self.missing_character_details.append(out_string)
+        self.missing_character_details.append((mod_matching_key_with_error, out_string))
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -452,7 +463,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     #     print(f"Matched as only one match: {matched_line}")
 
     if mod.matching_key:
-        # First try to match by if the path contains a folder
+        # First try to do exact match if the path contains a matching folder
         if mod_to_og_match is None:
             for og in og_call_data:
                 if f'/{mod.matching_key}/' in og.line:
