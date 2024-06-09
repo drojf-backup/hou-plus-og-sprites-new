@@ -274,7 +274,7 @@ def get_vanilla_only(log_lines):
 
 def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], str):
     p = subprocess.run(["git", 'log', f'-L{line_no},+1:{mod_script_file}'],
-                       capture_output=True, text=True, shell=True, cwd=mod_script_dir)
+                       capture_output=True, encoding="utf-8", shell=True, cwd=mod_script_dir, check=True)
     raw_output = p.stdout
     vanilla_lines = get_vanilla_only(raw_output.splitlines())
     return vanilla_lines, raw_output
