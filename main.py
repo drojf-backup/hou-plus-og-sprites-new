@@ -148,14 +148,22 @@ MION = 'mion'
 IRIE = 'irie'
 MOB_CHARACTER = 'mob'
 KAMEDA = 'kameda'
+OKONOGI = 'okonogi'
+OISHI = 'oishi'
+TAKANO = 'takano'
+TETU = 'tetu'
 
+# Silhouettes - should these be handled differently?
+MION_SILHOUETTE = 'mion_silhouette'
+RIKA_SILHOUETTE = 'rika_silhouette'
+TON_SILHOUETTE = 'ton_silhouette'
 ARA_SILHOUETTE = 'ara_silhouette'
+
+# Not used Silhouettes?
 NIT_SILHOUETTE = 'nit_silhouette'
 ODA_SILHOUETTE = 'oda_silhouette'
 OKA_SILHOUETTE = 'oka_silhouette'
-TON_SILHOUETTE = 'ton_silhouette'
 YOS_SILHOUETTE = 'yos_silhouette'
-
 KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
@@ -226,6 +234,16 @@ mod_to_name = {
     'iri': IRIE,
     'mo': MOB_CHARACTER,
     'kameda': KAMEDA,
+    'oko': OKONOGI,
+    'oisi': OISHI,
+    'ta': TAKANO,
+    'tetu': TETU,
+
+    # Silhouettes - should these be handled differently?
+    'hmi': MION_SILHOUETTE,
+    'hri': RIKA_SILHOUETTE,
+    'hton':TON_SILHOUETTE,
+    'hara': ARA_SILHOUETTE,
 }
 
 mod_effect_to_name = {
@@ -249,8 +267,17 @@ og_to_name = {
     'mion': MION,
     'irie': IRIE,
     'mob': MOB_CHARACTER,
-    'kameda': KAMEDA
-    # 'nit':
+    'kameda': KAMEDA,
+    'okonogi': OKONOGI,
+    'oisi': OISHI,
+    'takano': TAKANO,
+    'tetu': TETU,
+
+    # Silhouettes - should these be handled differently?
+    'mio': MION_SILHOUETTE,
+    'rik': RIKA_SILHOUETTE,
+    'hton':  TON_SILHOUETTE,
+    'hara': ARA_SILHOUETTE,
 }
 
 
@@ -425,10 +452,19 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     #     print(f"Matched as only one match: {matched_line}")
 
     if mod.matching_key:
-        for og in og_call_data:
-            if mod.matching_key in og.line:
-                mod_to_og_match = ModToOGMatch(og, None)
-                print_data += (f"Matched by matching key: {mod_to_og_match}\n")
+        # First try to match by if the path contains a folder
+        if mod_to_og_match is None:
+            for og in og_call_data:
+                if f'/{mod.matching_key}/' in og.line:
+                    mod_to_og_match = ModToOGMatch(og, None)
+                    print_data += (f"Matched by matching key (exact folder): {mod_to_og_match}\n")
+
+        # Then just match anywhere in the string
+        if mod_to_og_match is None:
+            for og in og_call_data:
+                if mod.matching_key in og.line:
+                    mod_to_og_match = ModToOGMatch(og, None)
+                    print_data += (f"Matched by matching key (anywhere in string): {mod_to_og_match}\n")
 
     # Try matching by same name match
     if mod_to_og_match is None:
