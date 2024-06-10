@@ -683,3 +683,7 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
 
 if global_result.missing_char_detected:
     print("<<<<<<<<<<< WARNING: one or more missing from the mod_to_name or og_to_name table, please update or matching will be incomplete! >>>>>>>>>>>>>>")
+
+#################################################################
+#### Now run 'generate_mapping_from_stats' script after this ####
+#################################################################
