@@ -644,7 +644,6 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
     stats.save_as_json(f'stats/{out_filename}.json', f'stats/{out_filename}_missing_chars.txt', global_result)
 
 
-
 # with open('debug_output.txt', 'w', encoding='utf-8') as debug_output:
 
 manual_name_matching = {
@@ -674,6 +673,11 @@ og_bg_lc_name_to_path = path_util.lc_name_to_path(
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
+
+for stats_file in Path('stats').glob('*.json'):
+    print(f"Some stats files already exist at {stats_file}! Please clear the folder if you want to regenerate the stats files.")
+    exit(-1)
+
 
 # TODO: add global stats across all items? only write out once all items processed
 global_result = GlobalResult()
