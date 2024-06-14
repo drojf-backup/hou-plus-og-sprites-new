@@ -157,6 +157,7 @@ modSpritePathCharacterNameRegex = re.compile(
 
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
+voicePathRegex = re.compile(r'^\s*ModPlayVoiceLS\([^,]+,[^,]+,\s*"\s*([^"]+)\s*"')
 
 RENA = 'rena'
 KEIICHI = 'keiichi'
@@ -452,6 +453,12 @@ def get_graphics_on_line(line, is_mod) -> str:
 
     return None
 
+def get_voice_on_line(line) -> str:
+    match = voicePathRegex.search(line)
+    if match:
+        return match.group(1)
+
+    return None
 
 def line_has_graphics(line, is_mod):
     if get_graphics_on_line(line, is_mod) is None:
@@ -625,6 +632,9 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
     for line_index, line in enumerate(all_lines):
         if max_lines != None and line_index > max_lines:
             break
+
+        last_voice = get_voice_on_line(line)
+        print(last_voice)
 
         print_data = parse_line(mod_script_dir, mod_script_path,
                                 all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
