@@ -2,12 +2,12 @@ import json
 from pathlib import Path
 
 
-def load_and_combine_stats() -> dict[str, dict[str, int]]:
+def load_and_combine_stats(stats_folder: str) -> dict[str, dict[str, int]]:
     glob_pattern = "*.json"
 
     combined_stats = {}
 
-    for stats_path in Path("stats").glob(glob_pattern):
+    for stats_path in Path(stats_folder).glob(glob_pattern):
         with open(stats_path, encoding='utf-8') as f:
             stats = json.load(f) #type: dict[str, dict[str, int]]
 
@@ -25,7 +25,14 @@ def load_and_combine_stats() -> dict[str, dict[str, int]]:
     return combined_stats
 
 
-combined_stats = load_and_combine_stats()
+stats_folder = 'stats'
+stats_temp_folder = 'stats_temp'
+
+for stats_file in Path(stats_temp_folder).glob('*.json'):
+    print(f"Some stats files already exist at [{stats_file}]! Please copy these files into the [stats] folder if you want to use them stats files.")
+    exit(-1)
+
+combined_stats = load_and_combine_stats(stats_folder)
 
 with open('combined_stats.json', 'w', encoding='utf-8') as f:
     json.dump(combined_stats, f, sort_keys=True, indent=4)

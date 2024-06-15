@@ -622,7 +622,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
     return print_data
 
-def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult):
+def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
     stats = Statistics()
 
     with open(mod_script_path, encoding='utf-8') as f:
@@ -634,7 +634,8 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
             break
 
         last_voice = get_voice_on_line(line)
-        print(last_voice)
+        if last_voice:
+            print(last_voice)
 
         print_data = parse_line(mod_script_dir, mod_script_path,
                                 all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
@@ -650,8 +651,10 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
     # print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
     # print(stats.count_statistics)
     out_filename = Path(mod_script_path).stem
-    os.makedirs('stats', exist_ok=True)
-    stats.save_as_json(f'stats/{out_filename}.json', f'stats/{out_filename}_missing_chars.txt', global_result)
+    os.makedirs(output_folder, exist_ok=True)
+    json_out_path = os.path.join(output_folder, f'{out_filename}.json')
+    missing_chars_path = os.path.join(output_folder, f'{out_filename}_missing_chars.txt')
+    stats.save_as_json(json_out_path, missing_chars_path, global_result)
 
 
 # with open('debug_output.txt', 'w', encoding='utf-8') as debug_output:
@@ -684,16 +687,13 @@ og_bg_lc_name_to_path = path_util.lc_name_to_path(
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 
-for stats_file in Path('stats').glob('*.json'):
-    print(f"Some stats files already exist at {stats_file}! Please clear the folder if you want to regenerate the stats files.")
-    exit(-1)
-
+output_folder = 'stats_temp'
 
 # TODO: add global stats across all items? only write out once all items processed
 global_result = GlobalResult()
 
 for modded_script_path in Path(mod_script_dir).glob(pattern):
-    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None, global_result=global_result)
+    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None, global_result=global_result, output_folder=output_folder)
 
 if global_result.missing_char_detected:
     print("<<<<<<<<<<< WARNING: one or more missing from the mod_to_name or og_to_name table, please update or matching will be incomplete! >>>>>>>>>>>>>>")
