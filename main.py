@@ -82,7 +82,7 @@ class VoiceBasedMatch:
             if og_match.og_calldata is not None:
                 self.og_path = og_match.og_calldata.path
             else:
-                self.og_path = og_match.s
+                self.og_path = og_match.og_path
 
         self.debug_mod_calldata = mod_calldata
         self.debug_og_match = og_match
@@ -96,21 +96,36 @@ class VoiceMatchDatabase:
         # Mapping of voice -> list of associated matches for that voice
         self.db = {} #type: dict[str, list[VoiceBasedMatch]]
 
-    def add(self, match: VoiceBasedMatch):
+    def set(self, match: VoiceBasedMatch):
+        # if self.try_get(match.voice, match.mod_path):
+        #     print(f"ERROR: [{match.voice}-{match.mod_path}] already exists in DB. Not adding")
+        #     return
+
         self.all_voices.append(match)
 
         if match.voice not in self.db:
             self.db[match.voice] = []
         self.db[match.voice].append(match)
 
-    def try_get(self, voice: str, mod_name: str):
+    def try_get(self, voice: str, mod_path: str) -> VoiceBasedMatch:
         if voice not in self.db:
             return None
 
         matches_for_voice = self.db[voice]
         for match in matches_for_voice:
-            if match.mod_name == mod_name:
-                return match.og_name
+            if match.mod_path == mod_path:
+                return match
+
+    def serialize(self, output_file: str):
+        # TODO: This should really be done atomically, but since
+        # this script will rarely be executed don't worry about it for now
+        with open(output_file, 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def deserialize(input_file: str) -> 'VoiceMatchDatabase':
+        with open(input_file, 'rb') as f:
+            return pickle.load(f)
 
 
 class Statistics:
@@ -525,6 +540,13 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     print_data += (f"Line No: {line_index + 1} Type: {mod.type} Key: {
                    mod.matching_key} Character: {mod.debug_character} Line: {line.strip()}\n")
 
+    # Skip this line if the image's mod path already exists in database
+    # and it has a match
+    memozied_match = voice_match_database.try_get(last_voice, mod.path)
+    if memozied_match is not None:
+        if memozied_match.og_path is not None:
+            return
+
     # Now use git to extract matching lines from the original game
     og_lines, raw_git_log_output = get_original_lines(
         mod_script_dir, mod_script_file, line_index + 1)
@@ -631,7 +653,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         statistics.match_ok += 1
         statistics.add_match(mod, mod_to_og_match)
 
-    voice_match_database.add(VoiceBasedMatch(last_voice, mod, mod_to_og_match))
+    voice_match_database.set(VoiceBasedMatch(last_voice, mod, mod_to_og_match))
 
     print_data += ('----------------------------------------\n')
 
@@ -668,7 +690,14 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     return print_data
 
 def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
-    voice_match_database = VoiceMatchDatabase(mod_script_path)
+    os.makedirs(output_folder, exist_ok=True)
+    out_filename = Path(mod_script_path).stem
+    voice_db_path = os.path.join(output_folder, f'{out_filename}_voice_db.pickle')
+
+    if Path(voice_db_path).exists():
+        voice_match_database = VoiceMatchDatabase.deserialize(voice_db_path)
+    else:
+        voice_match_database = VoiceMatchDatabase(mod_script_path)
 
     stats = Statistics()
 
@@ -681,9 +710,9 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
         if max_lines != None and line_index > max_lines:
             break
 
-        last_voice = get_voice_on_line(line)
-        if last_voice:
-            print(last_voice)
+        voice_on_line = get_voice_on_line(line)
+        if voice_on_line:
+            last_voice = voice_on_line
 
         print_data = parse_line(mod_script_dir, mod_script_path,
                                 all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching, last_voice, voice_match_database)
@@ -695,13 +724,15 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
                 debug_output_file.write(print_data)
 
 
+
     # Write the output statistcs .json
     # print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
     # print(stats.count_statistics)
-    out_filename = Path(mod_script_path).stem
-    os.makedirs(output_folder, exist_ok=True)
     json_out_path = os.path.join(output_folder, f'{out_filename}.json')
     missing_chars_path = os.path.join(output_folder, f'{out_filename}_missing_chars.txt')
+
+    voice_match_database.serialize(voice_db_path)
+
     stats.save_as_json(json_out_path, missing_chars_path, global_result)
 
 
