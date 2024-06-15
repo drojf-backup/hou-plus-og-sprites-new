@@ -22,8 +22,8 @@ class GlobalResult:
 
 class ModToOGMatch:
     def __init__(self, og_calldata, og_path) -> None:
-        self.og_calldata = og_calldata
-        self.og_path = og_path
+        self.og_calldata = og_calldata #type: CallData
+        self.og_path = og_path #type: str
 
 
 class CallData:
@@ -34,6 +34,7 @@ class CallData:
         self.debug_character = None
         self.path = get_graphics_on_line(line, is_mod)
         self.name = self.path.split('/')[-1]
+        self.debug_og_call_data = None
 
         if self.path is None:
             raise Exception(
@@ -70,6 +71,47 @@ class CallData:
                     self.matching_key = f'{missing_character_key}: {mod_character}'
                     # raise Exception(f"No mod character {
                     #                 mod_character} in database for line {line}")
+
+class VoiceBasedMatch:
+    def __init__(self, voice: str, mod_calldata: CallData, og_match: ModToOGMatch):
+        self.voice = voice # 'None' means no voice has been played yet
+        self.mod_path = mod_calldata.path # Cannot be None
+
+        self.og_path = None # 'None' means no match for this item
+        if og_match is not None:
+            if og_match.og_calldata is not None:
+                self.og_path = og_match.og_calldata.path
+            else:
+                self.og_path = og_match.s
+
+        self.debug_mod_calldata = mod_calldata
+        self.debug_og_match = og_match
+
+class VoiceMatchDatabase:
+    def __init__(self, script_name: str):
+        # Name of the script this voice based match database was extracted from
+        self.script_name = script_name
+        # List of all voice based matches (in this file)
+        self.all_voices = [] #type: list[VoiceBasedMatch]
+        # Mapping of voice -> list of associated matches for that voice
+        self.db = {} #type: dict[str, list[VoiceBasedMatch]]
+
+    def add(self, match: VoiceBasedMatch):
+        self.all_voices.append(match)
+
+        if match.voice not in self.db:
+            self.db[match.voice] = []
+        self.db[match.voice].append(match)
+
+    def try_get(self, voice: str, mod_name: str):
+        if voice not in self.db:
+            return None
+
+        matches_for_voice = self.db[voice]
+        for match in matches_for_voice:
+            if match.mod_name == mod_name:
+                return match.og_name
+
 
 class Statistics:
     def __init__(self):
@@ -467,7 +509,7 @@ def line_has_graphics(line, is_mod):
         return True
 
 
-def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str]):
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str], last_voice: str, voice_match_database: VoiceMatchDatabase):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
     print_data = ""
 
@@ -502,6 +544,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         # Ignore lines which don't have graphics
         if line_has_graphics(l, is_mod=False):
             og_call_data.append(CallData(l, is_mod=False))
+    mod.debug_og_call_data = og_call_data
 
     if len(og_call_data) == 0:
         msg = f'>> No OG graphics for {line}\n'
@@ -588,6 +631,8 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         statistics.match_ok += 1
         statistics.add_match(mod, mod_to_og_match)
 
+    voice_match_database.add(VoiceBasedMatch(last_voice, mod, mod_to_og_match))
+
     print_data += ('----------------------------------------\n')
 
     # if 'ModDrawCharacter' in line or 'DrawBustshot' in line:
@@ -623,12 +668,15 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     return print_data
 
 def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
+    voice_match_database = VoiceMatchDatabase(mod_script_path)
+
     stats = Statistics()
 
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
     # Check every line in the modded input script for corresponding og graphics
+    last_voice = None
     for line_index, line in enumerate(all_lines):
         if max_lines != None and line_index > max_lines:
             break
@@ -638,7 +686,7 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
             print(last_voice)
 
         print_data = parse_line(mod_script_dir, mod_script_path,
-                                all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching)
+                                all_lines, line_index, line, stats, og_bg_lc_name_to_path, manual_name_matching, last_voice, voice_match_database)
 
         # Print output for debbuging, only if enabled
         if debug_output_file is not None:
