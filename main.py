@@ -63,6 +63,15 @@ class CallData:
                 if mod_character == 'kumi' and 'kumi2_' in line:
                     mod_character = 'kumi2'
 
+                if mod_character == 'mo' and 'mo1_' in line:
+                    mod_character = 'mo1'
+
+                if mod_character == 'mo' and 'mo2_' in line:
+                    mod_character = 'mo2'
+
+                if mod_character == 'mo' and 'mo3_' in line:
+                    mod_character = 'mo3'
+
                 self.debug_character = mod_character
 
                 # To cope with the character name in the modded game and OG game being different,
@@ -320,6 +329,11 @@ NIT_SILHOUETTE = 'nit_silhouette'
 KEI_SILHOUETTE = 'kei_silhouette'
 OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
 
+# Mob characters
+MOB_1 = 'mob_character_1'
+MOB_2 = 'mob_character_2'
+MOB_3 = 'mob_character_3'
+
 def partial_path_to_regex(filenamefolder_list) -> re.Pattern:
     item = '|'.join(filenamefolder_list)
     complete_regex = f'"((?:{item})[^"]*)"'
@@ -421,6 +435,11 @@ mod_to_name = {
     'hoda': ODA_SILHOUETTE,
     'hhot': HOT_SILHOUETTE,
     'hnit': NIT_SILHOUETTE,
+
+    # Mob characters
+    'mo1': MOB_1,
+    'mo2': MOB_2,
+    'mo3': MOB_3,
 }
 
 mod_effect_to_name = {
