@@ -43,6 +43,9 @@ class CallData:
         if is_mod:
             # Assume the line is a graphics call. Look for a graphics path like "sprite/kei7_warai_" or "portrait/kameda1b_odoroki_" using regex
             match = modSpritePathCharacterNameRegex.search(line)
+            if not match:
+                match = effectCharacterNameRegex.search(line)
+
             if match:
                 # Get the sprite type (containing folder), either 'sprite' or 'portrait'
                 self.type = match.group(1)
@@ -211,6 +214,9 @@ ogSpritePathCharacterNameRegex = re.compile(r'"sprites/([^/]+)')
 
 modSpritePathCharacterNameRegex = re.compile(
     r'"((?:sprite)|(?:portrait))/([a-zA-Z]*)')
+
+effectCharacterNameRegex = re.compile(
+    r'"(effect)/((:?hara)|(:?hnit)|(:?hoda)|(:?hoka)|(:?hton)|(:?hyos))')
 
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
