@@ -586,6 +586,22 @@ def line_has_graphics(line, is_mod):
     else:
         return True
 
+match_pairs = [
+    ('_mati', '/mati')
+]
+
+def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
+    # Iterate though possible match pairs
+    for mod_key, og_key in match_pairs:
+        # Check the mod path contains the key, if not give up
+        if mod_key in mod.path:
+            # Now test all og lines which git returned
+            for og in og_call_data:
+                # Check og line contains key, if not give up
+                if og_key in og.path:
+                    return ModToOGMatch(og, None)
+
+    return None
 
 def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str], last_voice: str, voice_match_database: VoiceMatchDatabase):
     """This function expects a modded script line as input, as well other arguments describing where the line is from"""
@@ -624,7 +640,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     # print_data += raw_git_log_output
     print_data += ">> END Git Log Output <<\n"
 
-    og_call_data = []
+    og_call_data = [] #type: list[CallData]
     for l in og_lines:
         # Ignore lines which don't have graphics
         if line_has_graphics(l, is_mod=False):
@@ -662,20 +678,28 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     #     matched_line = og_lines[0]
     #     print(f"Matched as only one match: {matched_line}")
 
-    if mod.matching_key:
-        # First try to do exact match if the path contains a matching folder
-        if mod_to_og_match is None:
-            for og in og_call_data:
-                if f'/{mod.matching_key}/' in og.line:
-                    mod_to_og_match = ModToOGMatch(og, None)
-                    print_data += (f"Matched by matching key (exact folder): {mod_to_og_match}\n")
+    # scene folder are special CGs, so dont' try to match them
+    if mod_to_og_match is None:
+        if mod.path.startswith('scene/'):
+            mod_to_og_match = ModToOGMatch(None, 'SPECIAL_SCENE')
 
-        # Then just match anywhere in the string
-        if mod_to_og_match is None:
-            for og in og_call_data:
-                if mod.matching_key in og.line:
-                    mod_to_og_match = ModToOGMatch(og, None)
-                    print_data += (f"Matched by matching key (anywhere in string): {mod_to_og_match}\n")
+    if mod_to_og_match is None:
+        if mod.matching_key:
+            # First try to do exact match if the path contains a matching folder
+            if mod_to_og_match is None:
+                for og in og_call_data:
+                    if f'/{mod.matching_key}/' in og.line:
+                        mod_to_og_match = ModToOGMatch(og, None)
+                        print_data += (f"Matched by matching key (exact folder): {mod_to_og_match}\n")
+                        # TODO: insert break here?
+
+            # Then just match anywhere in the string
+            if mod_to_og_match is None:
+                for og in og_call_data:
+                    if mod.matching_key in og.line:
+                        mod_to_og_match = ModToOGMatch(og, None)
+                        print_data += (f"Matched by matching key (anywhere in string): {mod_to_og_match}\n")
+                        # TODO: insert break here?
 
     # Try matching by same name match
     if mod_to_og_match is None:
@@ -707,6 +731,12 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
             print(f"Matched by name in og files '{
                   mod.name}': {mod.path} -> {og_path}")
             mod_to_og_match = ModToOGMatch(None, og_path)
+
+    # Try matching by match keywords
+    if mod_to_og_match is None:
+        keyword_match = match_by_keyword(mod, og_call_data)
+        if keyword_match:
+            mod_to_og_match = keyword_match
 
     if mod_to_og_match is None:
         print_data += ("Failed to match line\n")
