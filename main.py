@@ -609,6 +609,7 @@ def line_has_graphics(line, is_mod):
         return True
 
 bg_match_pairs_regex_str = [
+    # Outbreak
     ('_mati', '/mati'), # city (machi)
     ('cit_', '/mati'), # mod has 'cit' (city), but OG does not and uses 'mati' (machi/town) instead
     ('_sinryou', '/sinryoujo/'), # hospital
@@ -627,13 +628,34 @@ bg_match_pairs_regex_str = [
     ('outb_jyt1', 'bg/mura2/'), # Burning hinamizawa night
     ('/m_hi([^a-zA-Z]|$)', '/mura/(m_)?hi([^a-zA-Z]|$)'), # Allow matching any mod with 'm_hi' to og with 'hi' or 'm_hi'
 
-    # One-off entries
+    # Outbreak One-off entries
     ('/ta2$', '/mura/tab2$'), # Storefront (only one of these exists in mod and og)
     ('/re_s4_01$', '/ren_s3$'), # Rena's house? (only one of these exists in mod and og)
     ('/m_y4$', '/mura/y_ie2$'), # Dark hinamizawa path (only one of these exists in mod and og)
     ('/js3_01$', '/jinja/jsa7$'), # Dark inside of temple (only one of these exists in mod and og)
     ('/js3_01$', '/jinja/jsa7$'), # Dark inside of temple (only one of these exists in mod and og)
     ('/y_ie', r'koya\dy'), # Shack/hut in the forest at night
+
+    # Bus Stop
+    ('/hina_bus_', '/hina/bus_'), # Generically allow any hina bus to match with other hina busses, since the numbering is not consistent between mod and og
+    ('/hina_douro_', '/hina/douro_'), # Generically allow, since the numbering is not consistent between mod and og
+    ('/hina_', '/hina/'), # Generically allow any hina matching last, since naming not consistent between mod and og
+    (r'/kuruma\d_', '/hina/car_'), # Car
+    ('/juku([^a-zA-Z]|$)', '/mati/juku([^a-zA-Z]|$)'), # Match any juku/classroom (in mati/town)
+    ('/neki1$', '/mati([^a-zA-Z]|$)'), # neki1 is shot of 3 bus stops in modern city. allow matching with any in modern city (mati)
+    ('/toi_', '/wc([^a-zA-Z]|$)'), # Allow matching toilet -> toilet
+    ('/sta_', '/eki([^a-zA-Z]|$)'), # Allow matching staion -> station
+    ('/ng_kyo([^a-zA-Z]|$)', '/tokyo/ko([^a-zA-Z]|$)'), # I thikn this is supposed to be a classroom in Toyko
+    ('/kawa([^a-zA-Z]|$)', '/damu([^a-zA-Z]|$)'), # I think mod doesn't have dedicated picture of dam, so just uses a shot of a river (kawa)    
+
+    # Bus Stop one-off entries
+    ('/hina_ryouri$', '/mati/ryouri$'), # Only appears once
+    ('/hina_simen1$', '/sonota/simen1$'), # Only appears once
+    ('^red$', '/hina/red1$'), # Only appears once
+    ('/koudou_02$', '/mati2/mati_005$'), # Picture of city street at night
+    ('/oni1$', '/hina/kawa5m$'), # Picture of river during day
+    ('/kimi_ten1$', '/sion/si_h6$'), # Greyscale picture of ceiling showing lampshade
+    ('/hoteru$', '/sion/si_h1$'), # Picture of hotel room showing bed
 ]
 
 bg_match_pairs = [ (re.compile(p[0]), re.compile(p[1])) for p in bg_match_pairs_regex_str ] # type: list[tuple[re.Pattern, re.Pattern]]
@@ -652,6 +674,16 @@ def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
             og_filestem = Path(og.path).stem
             if expected_og_stem == og_filestem:
                 return ModToOGMatch(og, None)
+
+    # For Busstop, check for 'hina' matches
+    # eg. mod is hina_bus_01 and og is hina/bus_01
+    # Next section will allow more generic matching for '/hina' to '/hina/'
+    if mod_filestem.startswith('hina_'):
+        expected_og_key = mod_filestem.replace('hina_', '/hina/')
+        for og in og_call_data:
+            if expected_og_key in og.path:
+                return ModToOGMatch(og, None)
+
 
     # Iterate though possible match pairs
     for mod_key, og_key in match_pairs:
