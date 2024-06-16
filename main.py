@@ -45,6 +45,8 @@ class CallData:
             match = modSpritePathCharacterNameRegex.search(line)
             if not match:
                 match = effectCharacterNameRegex.search(line)
+            if not match:
+                match = effectEyeCharacterNameRegex.search(line)
 
             if match:
                 # Get the sprite type (containing folder), either 'sprite' or 'portrait'
@@ -217,6 +219,10 @@ modSpritePathCharacterNameRegex = re.compile(
 
 effectCharacterNameRegex = re.compile(
     r'"(effect)/((:?hara)|(:?hnit)|(:?hoda)|(:?hoka)|(:?hton)|(:?hyos))')
+
+effectEyeCharacterNameRegex = re.compile(
+    r'"(effect)/eye_((:?kas)|(:?kei)|(:?me)|(:?re)|(:?sa))')
+
 
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
