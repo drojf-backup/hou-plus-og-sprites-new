@@ -97,7 +97,7 @@ class VoiceMatchDatabase:
         # Name of the script this voice based match database was extracted from
         self.script_name = script_name
         # List of all voice based matches (in this file)
-        self.all_voices = [] #type: list[VoiceBasedMatch]
+        # self.all_voices = [] #type: list[VoiceBasedMatch]
         # Mapping of voice -> list of associated matches for that voice
         self.db = {} #type: dict[str, list[VoiceBasedMatch]]
 
@@ -106,11 +106,20 @@ class VoiceMatchDatabase:
         #     print(f"ERROR: [{match.voice}-{match.mod_path}] already exists in DB. Not adding")
         #     return
 
-        self.all_voices.append(match)
-
         if match.voice not in self.db:
             self.db[match.voice] = []
-        self.db[match.voice].append(match)
+
+        match_array = self.db[match.voice]
+
+        # Check if entry already exists - if so, overwrite it and return
+        for i in range(len(match_array)):
+            previous_match = match_array[i]
+            if previous_match.mod_path == match.mod_path:
+                match_array[i] = match
+                return
+
+        # Otherwise add a new entry
+        match_array.append(match)
 
     def try_get(self, voice: str, mod_path: str) -> VoiceBasedMatch:
         if voice not in self.db:
