@@ -148,6 +148,10 @@ class Statistics:
         self.match_fail = 0
         self.count_statistics = {} #type: dict[str, dict[str, list[CallData]]]
         self.missing_character_details = [] #type: list[str]
+        # Keep track of mod bg path -> dict[og path, ogmatch?] guesses
+        self.bg_guesses = {} #type: dict[str, dict[str, list[CallData]]]
+        # Keep track of mod sprite path -> list[og path] guesses
+        self.sprite_guesses = {} #type: dict[str, dict[str, list[CallData]]]
 
     def total(self):
         return self.match_ok + self.match_fail
@@ -208,12 +212,49 @@ class Statistics:
                 for (key, debug_out) in self.missing_character_details:
                     f.writelines(debug_out)
 
+        # Save bg and sprite guesses
+        bg_guess_path = Path(output_file_path).with_suffix('.bg.txt')
+        sprite_guess_path = Path(output_file_path).with_suffix('.sprite.txt')
+        Statistics.save_matches(bg_guess_path, self.bg_guesses)
+        Statistics.save_matches(sprite_guess_path, self.sprite_guesses)
+
     def add_missing_character(self, mod_matching_key_with_error: str, missing_character_line: str, og_lines: list[str]):
         out_string = f'{mod_matching_key_with_error}: {missing_character_line.strip()}\n'
         for line in og_lines:
             out_string += f'\t{line.strip()}\n'
 
         self.missing_character_details.append((mod_matching_key_with_error, out_string))
+
+    def record_guesses(self, mod: CallData, og_calls: list[CallData]):
+        is_sprite = mod.path.startswith('sprite/') or mod.path.startswith('portrait/')
+
+        if is_sprite:
+            for og_call in og_calls:
+                if og_call.path.startswith('sprites/') or og_call.path.startswith('effect/'):
+                    Statistics.add_guess(self.sprite_guesses, mod, og_call)
+        else:
+            for og_call in og_calls:
+                if og_call.path.startswith('bg/') or og_call.path.startswith('effect/'):
+                    Statistics.add_guess(self.bg_guesses, mod, og_call)
+
+    @staticmethod
+    def add_guess(guesses: dict[str, dict[str, list[CallData]]], mod: CallData, call: CallData):
+        if mod.path not in guesses:
+            guesses[mod.path] = {}
+
+        mod_call_dict = guesses[mod.path] #type: dict[str, list[CallData]]
+
+        if call.path not in mod_call_dict:
+            mod_call_dict[call.path] = []
+
+        mod_call_dict[call.path].append(call)
+
+    @staticmethod
+    def save_matches(out_file: str, guesses: dict[str, dict[str, list[CallData]]]):
+        with open(out_file, 'w', encoding='utf-8') as f:
+            for mod_path, og_guesses in guesses.items():
+                og_guess_paths = ','.join(og_guesses.keys())
+                f.write(f'{mod_path}: [{og_guess_paths}]\n')
 
 
 # assume outputLineAll is always a dummy (sometimes it's not, but this simplification should be OK)
@@ -671,6 +712,9 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
         print_data += ("Failed to match line\n")
         print(f"Failed to match '{mod.name}' line: {line.strip()}")
         statistics.match_fail += 1
+
+        # Record what possible matches there could be for analysis
+        statistics.record_guesses(mod, og_call_data)
     else:
         statistics.match_ok += 1
         statistics.add_match(mod, mod_to_og_match)
