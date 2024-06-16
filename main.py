@@ -364,6 +364,7 @@ mod_to_name = {
     'sato': SATOSHI,
     'tomi': TOMITAKE,
     'kasa': KASAI,
+    'kas': KASAI,
     'aks': AKASAKA,
 
 
