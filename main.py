@@ -277,6 +277,8 @@ modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
 voicePathRegex = re.compile(r'^\s*ModPlayVoiceLS\([^,]+,[^,]+,\s*"\s*([^"]+)\s*"')
 
+textRegex = re.compile(r'(effect/wagabu)|(effect/omo1)|(effect/omo2)|(effect/tyuui)|(effect/day_)')
+
 RENA = 'rena'
 KEIICHI = 'keiichi'
 SHION = 'shion'
@@ -599,7 +601,18 @@ bg_match_pairs_regex_str = [
     ('ryoutei', 'sonozaki/ryoutei'), # ryoutei - under the sonozaki folder, it's the dining area?
     ('background/hi([^a-zA-Z]|$)', 'bg/mura/hi'), # hi (hinamizawa)
     ('background/hi([^a-zA-Z]|$)', 'bg/mura/m_hi'), # hi (hinamizawa)
-    ('kamik_sono_', 'sonozakigumi/sono_') # sonozaki building?
+    ('kamik_sono_', 'sonozakigumi/sono_'), # sonozaki building?
+    ('outb_jt1', '(bg/mura2/)|(/jinja/jyt1)'), # Burning hinamizawa day
+    ('outb_jyt1', 'bg/mura2/'), # Burning hinamizawa night
+    ('/m_hi([^a-zA-Z]|$)', '/mura/(m_)?hi([^a-zA-Z]|$)'), # Allow matching any mod with 'm_hi' to og with 'hi' or 'm_hi'
+
+    # One-off entries
+    ('/ta2$', '/mura/tab2$'), # Storefront (only one of these exists in mod and og)
+    ('/re_s4_01$', '/ren_s3$'), # Rena's house? (only one of these exists in mod and og)
+    ('/m_y4$', '/mura/y_ie2$'), # Dark hinamizawa path (only one of these exists in mod and og)
+    ('/js3_01$', '/jinja/jsa7$'), # Dark inside of temple (only one of these exists in mod and og)
+    ('/js3_01$', '/jinja/jsa7$'), # Dark inside of temple (only one of these exists in mod and og)
+    ('/y_ie', r'koya\dy'), # Shack/hut in the forest at night
 ]
 
 bg_match_pairs = [ (re.compile(p[0]), re.compile(p[1])) for p in bg_match_pairs_regex_str ] # type: list[tuple[re.Pattern, re.Pattern]]
@@ -710,6 +723,8 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     if mod_to_og_match is None:
         if mod.path.startswith('scene/'):
             mod_to_og_match = ModToOGMatch(None, 'SPECIAL_SCENE')
+        elif textRegex.search(mod.path):
+            mod_to_og_match = ModToOGMatch(None, 'SPECIAL_TEXT_EFFECT')
 
     if mod_to_og_match is None:
         if mod.matching_key:
