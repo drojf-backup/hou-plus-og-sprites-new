@@ -437,45 +437,50 @@ mod_effect_to_name = {
 # TODO: check other chars (eg mo2, mo3, mo4) if they appear in og script
 # or rather, scan OG script for all used sprites, not just mod script
 
-og_to_name = {
-    'rena': RENA,
-    'sion': SHION,
-    'keiiti': KEIICHI,
-    'rika': RIKA,
-    'hanyu': HANYU,
-    'satoko': SATOKO,
-    'mion': MION,
-    'irie': IRIE,
-    'mob': MOB_CHARACTER,
-    'kam': KAMEDA,
-    'okonogi': OKONOGI,
-    'oisi': OISHI,
-    'takano': TAKANO,
-    'tetu': TETU,
-    'mo1': MURA,
-    'une': UNE,
-    'tam': TAMURA,
+name_to_og = {
+    RENA: 'rena',
+    SHION: 'sion',
+    KEIICHI: 'keiiti',
+    RIKA: 'rika',
+    HANYU: 'hanyu',
+    SATOKO: 'satoko',
+    MION: 'mion',
+    IRIE: 'irie',
+    MOB_CHARACTER: 'mob',
+    KAMEDA: 'kam',
+    OKONOGI: 'okonogi',
+    OISHI: 'oisi',
+    TAKANO: 'takano',
+    TETU: 'tetu',
+    MURA: 'mo1', # NOTE: In OG, mob character 1 is used instead of MURA's sprite (?). So both MURA and MOB_1 map to 'mo1'
+    UNE: 'une',
+    TAMURA: 'tam',
     # Special case - mob characters with similar name
-    'mo6': KUMI_1,
-    'mo5': KUMI_2,
+    KUMI_1: 'mo6',
+    KUMI_2: 'mo5',
 
     # Only used in staffroom15?
-    'sato': SATOSHI,
-    'tomi': TOMITAKE,
-    'kasa': KASAI,
-    'aks': AKASAKA,
+    SATOSHI: 'sato',
+    TOMITAKE: 'tomi',
+    KASAI: 'kasa',
+    AKASAKA: 'aks',
 
     # Silhouettes - should these be handled differently?
-    'mio': MION_SILHOUETTE,
-    'rik': RIKA_SILHOUETTE,
-    'ton': TON_SILHOUETTE,
-    'ara': ARA_SILHOUETTE,
-    'yos': YOS_SILHOUETTE,
-    'oka': OKA_SILHOUETTE,
-    'hos': HOS_SILHOUETTE,
-    'oda': ODA_SILHOUETTE,
-    'hod': HOT_SILHOUETTE,
-    'nit': NIT_SILHOUETTE,
+    MION_SILHOUETTE: 'mio',
+    RIKA_SILHOUETTE: 'rik',
+    TON_SILHOUETTE: 'ton',
+    ARA_SILHOUETTE: 'ara',
+    YOS_SILHOUETTE: 'yos',
+    OKA_SILHOUETTE: 'oka',
+    HOS_SILHOUETTE: 'hos',
+    ODA_SILHOUETTE: 'oda',
+    HOT_SILHOUETTE: 'hod',
+    NIT_SILHOUETTE: 'nit',
+
+    # Mob characters
+    MOB_1: 'mo1', # NOTE: In OG, mob character 1 is used instead of MURA's sprite (?). So both MURA and MOB_1 map to 'mo1'
+    MOB_2: 'mo2',
+    MOB_3: 'mo3',
 }
 
 
@@ -486,9 +491,6 @@ def reverse_dict(d: dict[str, str]) -> dict[str, str]:
         reversed[value] = key
 
     return reversed
-
-
-name_to_og = reverse_dict(og_to_name)
 
 
 def get_vanilla_only(log_lines):
