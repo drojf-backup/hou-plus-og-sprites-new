@@ -585,11 +585,16 @@ def line_has_graphics(line, is_mod):
     else:
         return True
 
-match_pairs = [
-    ('_mati', '/mati')
+bg_match_pairs = [
+    ('_mati', '/mati'),
+    ('_sinryou', '/sinryoujo/')
 ]
 
+sprite_match_pairs = []
+
 def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
+    match_pairs = sprite_match_pairs if mod.is_sprite else bg_match_pairs
+
     # Iterate though possible match pairs
     for mod_key, og_key in match_pairs:
         # Check the mod path contains the key, if not give up
