@@ -259,8 +259,18 @@ class Statistics:
 
     @staticmethod
     def save_matches(out_file: str, guesses: dict[str, dict[str, list[CallData]]]):
-        with open(out_file, 'w', encoding='utf-8') as f:
-            for mod_path, og_guesses in guesses.items():
+        out_path = Path(out_file)
+        all_guesses = guesses.items()
+
+        # Remove the output file if no guesses found
+        if not all_guesses:
+            if out_path.exists():
+                out_path.unlink()
+            return
+
+        # Otherwise write the guesses in human readable format
+        with open(out_path, 'w', encoding='utf-8') as f:
+            for mod_path, og_guesses in all_guesses:
                 og_guess_paths = ','.join(og_guesses.keys())
                 f.write(f'{mod_path}: [{og_guess_paths}]\n')
 
