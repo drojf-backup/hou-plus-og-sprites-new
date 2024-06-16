@@ -585,24 +585,48 @@ def line_has_graphics(line, is_mod):
     else:
         return True
 
-bg_match_pairs = [
-    ('_mati', '/mati'),
-    ('_sinryou', '/sinryoujo/')
+bg_match_pairs_regex_str = [
+    ('_mati', '/mati'), # city (machi)
+    ('cit_', '/mati'), # mod has 'cit' (city), but OG does not and uses 'mati' (machi/town) instead
+    ('_sinryou', '/sinryoujo/'), # hospital
+    ('_shikenkan', '/shikenkan'), # shikenkan (test tube) There is only one image of test-tubes
+    ('/susuki', '/kusa'), # susuki (Miscanthus sinensis (a species of grass)) vs kusa (grass)
+    ('effect/kamik_inf_1', 'bg/etc/inf_1'), # Image of earth changing to red tint (lower number is less red)
+    ('effect/kamik_inf_2', 'bg/etc/inf_2'),
+    ('effect/kamik_inf_3', 'bg/etc/inf_3'),
+    ('effect/kamik_inf_4', 'bg/etc/inf_4'),
+    ('effect/kamik_inf_5', 'bg/etc/inf_5'),
+    ('ryoutei', 'sonozaki/ryoutei'), # ryoutei - under the sonozaki folder, it's the dining area?
+    ('background/hi([^a-zA-Z]|$)', 'bg/mura/hi'), # hi (hinamizawa)
+    ('background/hi([^a-zA-Z]|$)', 'bg/mura/m_hi'), # hi (hinamizawa)
+    ('kamik_sono_', 'sonozakigumi/sono_') # sonozaki building?
 ]
+
+bg_match_pairs = [ (re.compile(p[0]), re.compile(p[1])) for p in bg_match_pairs_regex_str ] # type: list[tuple[re.Pattern, re.Pattern]]
 
 sprite_match_pairs = []
 
 def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
     match_pairs = sprite_match_pairs if mod.is_sprite else bg_match_pairs
 
+    # Check for outbreak variants
+    # Mod has specific images for 'outb' (outbreak), but OG does not and just uses the normal versions of the image
+    mod_filestem = Path(mod.path).stem
+    if mod_filestem.startswith('outb_'):
+        expected_og_stem = mod_filestem.replace('outb_', '')
+        for og in og_call_data:
+            og_filestem = Path(og.path).stem
+            if expected_og_stem == og_filestem:
+                return ModToOGMatch(og, None)
+
     # Iterate though possible match pairs
     for mod_key, og_key in match_pairs:
         # Check the mod path contains the key, if not give up
-        if mod_key in mod.path:
+        if mod_key.search(mod.path):
             # Now test all og lines which git returned
             for og in og_call_data:
                 # Check og line contains key, if not give up
-                if og_key in og.path:
+                if og_key.search(og.path):
                     return ModToOGMatch(og, None)
 
     return None
