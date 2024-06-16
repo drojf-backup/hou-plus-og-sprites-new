@@ -35,6 +35,7 @@ class CallData:
         self.path = get_graphics_on_line(line, is_mod)
         self.name = self.path.split('/')[-1]
         self.debug_og_call_data = None
+        self.is_sprite = self.path.startswith('sprite/') or self.path.startswith('portrait/')
 
         if self.path is None:
             raise Exception(
@@ -226,9 +227,7 @@ class Statistics:
         self.missing_character_details.append((mod_matching_key_with_error, out_string))
 
     def record_guesses(self, mod: CallData, og_calls: list[CallData]):
-        is_sprite = mod.path.startswith('sprite/') or mod.path.startswith('portrait/')
-
-        if is_sprite:
+        if mod.is_sprite:
             for og_call in og_calls:
                 if og_call.path.startswith('sprites/') or og_call.path.startswith('effect/'):
                     Statistics.add_guess(self.sprite_guesses, mod, og_call)
