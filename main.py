@@ -964,8 +964,6 @@ if not os.path.exists(unmodded_cg):
 og_bg_lc_name_to_path = path_util.lc_name_to_path(
     unmodded_cg, exclude=['sprites/'])
 
-
-# unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 
 output_folder = 'stats_temp'
