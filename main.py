@@ -12,145 +12,22 @@ from typing import List
 
 # User imports
 import path_util
+import common
+from common import CallData, ModToOGMatch, VoiceBasedMatch, VoiceMatchDatabase
+import graphics_identifier
 
-missing_character_key = "ERROR_MISSING_CHARACTER"
+voicePathRegex = re.compile(r'^\s*ModPlayVoiceLS\([^,]+,[^,]+,\s*"\s*([^"]+)\s*"')
+def get_voice_on_line(line) -> str:
+    match = voicePathRegex.search(line)
+    if match:
+        return match.group(1)
+
+    return None
+
 
 class GlobalResult:
     def __init__(self) -> None:
         self.missing_char_detected = False
-
-
-class ModToOGMatch:
-    def __init__(self, og_calldata, og_path) -> None:
-        self.og_calldata = og_calldata #type: CallData
-        self.og_path = og_path #type: str
-
-
-class CallData:
-    def __init__(self, line, is_mod):
-        self.line = line
-        self.type = None  # type
-        self.matching_key = None  # lookup_key
-        self.debug_character = None
-        self.path = get_graphics_on_line(line, is_mod)
-        self.name = self.path.split('/')[-1]
-        self.debug_og_call_data = None
-        self.is_sprite = self.path.startswith('sprite/') or self.path.startswith('portrait/')
-
-        if self.path is None:
-            raise Exception(
-                f"Error (is_mod: {is_mod}): Couldn't get path from line {line}")
-
-        if is_mod:
-            # Assume the line is a graphics call. Look for a graphics path like "sprite/kei7_warai_" or "portrait/kameda1b_odoroki_" using regex
-            match = modSpritePathCharacterNameRegex.search(line)
-            if not match:
-                match = effectCharacterNameRegex.search(line)
-            if not match:
-                match = effectEyeCharacterNameRegex.search(line)
-
-            if match:
-                # Get the sprite type (containing folder), either 'sprite' or 'portrait'
-                self.type = match.group(1)
-                # Get the character name, like kei7 or kameda1b. The expression part is discarded.
-                mod_character = match.group(2)
-
-                # Special case for mob characters kumi1 and kumi2, whose names don't follow the usual convention
-                # Eg. kumi1_01_0.png and kumi2_01_0.png are different people who appear at the same time
-                if mod_character == 'kumi' and 'kumi1_' in line:
-                    mod_character = 'kumi1'
-
-                if mod_character == 'kumi' and 'kumi2_' in line:
-                    mod_character = 'kumi2'
-
-                if mod_character == 'mo' and 'mo1_' in line:
-                    mod_character = 'mo1'
-
-                if mod_character == 'mo' and 'mo2_' in line:
-                    mod_character = 'mo2'
-
-                if mod_character == 'mo' and 'mo3_' in line:
-                    mod_character = 'mo3'
-
-                self.debug_character = mod_character
-
-                # To cope with the character name in the modded game and OG game being different,
-                # normalize the names
-                #
-                # Do this by mapping the modded character name to a normalized name, eg 'ri'(mod)->'rika'(normalized)
-                # Then map the normalized name to the OG name, eg 'rika'(normalized)->'rika'(og)
-                # The 'matching_key' is then set to the OG name, so we can cross check it against the earlier git commit of the og game
-                if mod_character in mod_to_name:
-                    self.matching_key = name_to_og[mod_to_name[mod_character]]
-                else:
-                    self.matching_key = f'{missing_character_key}: {mod_character}'
-                    # raise Exception(f"No mod character {
-                    #                 mod_character} in database for line {line}")
-
-class VoiceBasedMatch:
-    def __init__(self, voice: str, mod_calldata: CallData, og_match: ModToOGMatch):
-        self.voice = voice # 'None' means no voice has been played yet
-        self.mod_path = mod_calldata.path # Cannot be None
-
-        self.og_path = None # 'None' means no match for this item
-        if og_match is not None:
-            if og_match.og_calldata is not None:
-                self.og_path = og_match.og_calldata.path
-            else:
-                self.og_path = og_match.og_path
-
-        self.debug_mod_calldata = mod_calldata
-        self.debug_og_match = og_match
-
-class VoiceMatchDatabase:
-    def __init__(self, script_name: str):
-        # Name of the script this voice based match database was extracted from
-        self.script_name = script_name
-        # List of all voice based matches (in this file)
-        # self.all_voices = [] #type: list[VoiceBasedMatch]
-        # Mapping of voice -> list of associated matches for that voice
-        self.db = {} #type: dict[str, list[VoiceBasedMatch]]
-
-    def set(self, match: VoiceBasedMatch):
-        # if self.try_get(match.voice, match.mod_path):
-        #     print(f"ERROR: [{match.voice}-{match.mod_path}] already exists in DB. Not adding")
-        #     return
-
-        if match.voice not in self.db:
-            self.db[match.voice] = []
-
-        match_array = self.db[match.voice]
-
-        # Check if entry already exists - if so, overwrite it and return
-        for i in range(len(match_array)):
-            previous_match = match_array[i]
-            if previous_match.mod_path == match.mod_path:
-                match_array[i] = match
-                return
-
-        # Otherwise add a new entry
-        match_array.append(match)
-
-    def try_get(self, voice: str, mod_path: str) -> VoiceBasedMatch:
-        if voice not in self.db:
-            return None
-
-        matches_for_voice = self.db[voice]
-        for match in matches_for_voice:
-            if match.mod_path == mod_path:
-                return match
-
-    def serialize(self, output_file: str):
-        # TODO: This should really be done atomically, but since
-        # this script will rarely be executed don't worry about it for now
-        with open(output_file, 'wb') as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def deserialize(input_file: str) -> 'VoiceMatchDatabase':
-        with open(input_file, 'rb') as f:
-            return pickle.load(f)
-
 
 class Statistics:
     def __init__(self):
@@ -282,235 +159,9 @@ outputLineRegex = re.compile(r"OutputLine\(\s*[^,]*,\s*\"(.*)\"\s*,")
 
 ogSpritePathCharacterNameRegex = re.compile(r'"sprites/([^/]+)')
 
-modSpritePathCharacterNameRegex = re.compile(
-    r'"((?:sprite)|(?:portrait))/([a-zA-Z]*)')
-
-effectCharacterNameRegex = re.compile(
-    r'"(effect)/((:?hara)|(:?hnit)|(:?hoda)|(:?hoka)|(:?hton)|(:?hyos))')
-
-effectEyeCharacterNameRegex = re.compile(
-    r'"(effect)/eye_((:?kas)|(:?kei)|(:?me)|(:?re)|(:?sa))')
-
-
 modEffectPathRegex = re.compile(r'"effect/(\w*)')
 
-voicePathRegex = re.compile(r'^\s*ModPlayVoiceLS\([^,]+,[^,]+,\s*"\s*([^"]+)\s*"')
-
 textRegex = re.compile(r'(effect/wagabu)|(effect/omo1)|(effect/omo2)|(effect/tyuui)|(effect/day_)')
-
-RENA = 'rena'
-KEIICHI = 'keiichi'
-SHION = 'shion'
-RIKA = 'rika'
-HANYU = 'hanyu'
-SATOKO = 'satoko'
-MION = 'mion'
-IRIE = 'irie'
-MOB_CHARACTER = 'mob'
-KAMEDA = 'kameda'
-OKONOGI = 'okonogi'
-OISHI = 'oishi'
-TAKANO = 'takano'
-TETU = 'tetu'
-MURA = 'mura'
-UNE = 'une'
-TAMURA = 'tamura'
-KUMI_1 = 'kumi1'
-KUMI_2 = 'kumi2'
-
-# Only used in staffroom15?
-SATOSHI = 'satoshi'
-TOMITAKE = 'tomitake'
-KASAI = 'kasai'
-AKASAKA = 'akasaka'
-
-# Silhouettes - should these be handled differently?
-MION_SILHOUETTE = 'mion_silhouette'
-RIKA_SILHOUETTE = 'rika_silhouette'
-TON_SILHOUETTE = 'ton_silhouette'
-ARA_SILHOUETTE = 'ara_silhouette'
-YOS_SILHOUETTE = 'yos_silhouette'
-OKA_SILHOUETTE = 'oka_silhouette'
-HOS_SILHOUETTE = 'hos_silhouette'
-ODA_SILHOUETTE = 'oda_silhouette'
-HOT_SILHOUETTE = 'hot_silhouette'
-NIT_SILHOUETTE = 'nit_silhouette'
-
-KEI_SILHOUETTE = 'kei_silhouette'
-OYASHIRO_SILHOUETTE = 'oyashiro_silhouette'
-
-# Mob characters
-MOB_1 = 'mob_character_1'
-MOB_2 = 'mob_character_2'
-MOB_3 = 'mob_character_3'
-
-def partial_path_to_regex(filenamefolder_list) -> re.Pattern:
-    item = '|'.join(filenamefolder_list)
-    complete_regex = f'"((?:{item})[^"]*)"'
-    return re.compile(complete_regex)
-
-MOD_CG_LIST = [
-    'background/',
-    'black',
-    'chapter/',
-    'credits/',
-    'effect/',
-    'filter_hanyu',
-    'omake/',
-    'portrait/',
-    'red',
-    'scene/',
-    'sprite/',
-    'title/',
-    'transparent',
-    'white',
-    'windo_filter',
-    'windo_filter_adv',
-    'windo_filter_nvladv',
-]
-
-OG_CG_LIST = [
-    'bg/',
-    'black',
-    'chapter/',
-    'cinema_window',
-    'cinema_window_name',
-    'credits/',
-    'effect/',
-    'furiker_a',
-    'furiker_b',
-    'hanyuu_background',
-    'img/',
-    'no_data',
-    'omake/',
-    'sprites/',
-    'title/',
-    'white',
-    'windo_filter',
-]
-
-OG_CG_REGEX = partial_path_to_regex(OG_CG_LIST)  # type: List[re.Pattern]
-MOD_CG_REGEX = partial_path_to_regex(MOD_CG_LIST)  # type: List[re.Pattern]
-
-
-# for item in OG_TO_REGEX:
-#     complete_regex = f'"({item}[^"]*)"'
-#     print(complete_regex)
-#     OG_SHOULD_PROCESS_REGEX.append(
-#         re.compile(complete_regex)
-#     )
-
-mod_to_name = {
-    're': RENA,
-    # renasen is rena with hatchet, but just mapping to RENA should generally be OK
-    'renasen': RENA,
-    'si': SHION,
-    'kei': KEIICHI,
-    # keisen is rena with hatchet, but just mapping to RENA should generally be OK
-    'keisen': KEIICHI,
-    'ri': RIKA,
-    'ha': HANYU,
-    'sa': SATOKO,
-    'me': MION,
-    'iri': IRIE,
-    'mo': MOB_CHARACTER,
-    'kameda': KAMEDA,
-    'oko': OKONOGI,
-    'oisi': OISHI,
-    'ta': TAKANO,
-    'tetu': TETU,
-    'mura': MURA,
-    'une': UNE,
-    'tamura': TAMURA,
-    # Special case - mob characters with similar name
-    'kumi1': KUMI_1,
-    'kumi2': KUMI_2,
-
-    # Only used in staffroom15?
-    'sato': SATOSHI,
-    'tomi': TOMITAKE,
-    'kasa': KASAI,
-    'kas': KASAI,
-    'aks': AKASAKA,
-
-
-    # Silhouettes - should these be handled differently?
-    'hmi': MION_SILHOUETTE,
-    'hri': RIKA_SILHOUETTE,
-    'hton':TON_SILHOUETTE,
-    'hara': ARA_SILHOUETTE,
-    'hyos': YOS_SILHOUETTE,
-    'hoka': OKA_SILHOUETTE,
-    'hhos': HOS_SILHOUETTE,
-    'hoda': ODA_SILHOUETTE,
-    'hhot': HOT_SILHOUETTE,
-    'hnit': NIT_SILHOUETTE,
-
-    # Mob characters
-    'mo1': MOB_1,
-    'mo2': MOB_2,
-    'mo3': MOB_3,
-}
-
-mod_effect_to_name = {
-    'hara': ARA_SILHOUETTE,
-    'hnit':  NIT_SILHOUETTE,
-    'hoda': ODA_SILHOUETTE,
-    'hoka': OKA_SILHOUETTE,
-    'hton':  TON_SILHOUETTE,
-    'hyos': YOS_SILHOUETTE,
-    'kei': KEI_SILHOUETTE,
-    'oyasiro': OYASHIRO_SILHOUETTE,
-}
-
-# TODO: check other chars (eg mo2, mo3, mo4) if they appear in og script
-# or rather, scan OG script for all used sprites, not just mod script
-
-name_to_og = {
-    RENA: 'rena',
-    SHION: 'sion',
-    KEIICHI: 'keiiti',
-    RIKA: 'rika',
-    HANYU: 'hanyu',
-    SATOKO: 'satoko',
-    MION: 'mion',
-    IRIE: 'irie',
-    MOB_CHARACTER: 'mob',
-    KAMEDA: 'kam',
-    OKONOGI: 'okonogi',
-    OISHI: 'oisi',
-    TAKANO: 'takano',
-    TETU: 'tetu',
-    MURA: 'mo1', # NOTE: In OG, mob character 1 is used instead of MURA's sprite (?). So both MURA and MOB_1 map to 'mo1'
-    UNE: 'une',
-    TAMURA: 'tam',
-    # Special case - mob characters with similar name
-    KUMI_1: 'mo6',
-    KUMI_2: 'mo5',
-
-    # Only used in staffroom15?
-    SATOSHI: 'sato',
-    TOMITAKE: 'tomi',
-    KASAI: 'kasa',
-    AKASAKA: 'aks',
-
-    # Silhouettes - should these be handled differently?
-    MION_SILHOUETTE: 'mio',
-    RIKA_SILHOUETTE: 'rik',
-    TON_SILHOUETTE: 'ton',
-    ARA_SILHOUETTE: 'ara',
-    YOS_SILHOUETTE: 'yos',
-    OKA_SILHOUETTE: 'oka',
-    HOS_SILHOUETTE: 'hos',
-    ODA_SILHOUETTE: 'oda',
-    HOT_SILHOUETTE: 'hod',
-    NIT_SILHOUETTE: 'nit',
-
-    # Mob characters
-    MOB_1: 'mo1', # NOTE: In OG, mob character 1 is used instead of MURA's sprite (?). So both MURA and MOB_1 map to 'mo1'
-    MOB_2: 'mo2',
-    MOB_3: 'mo3',
-}
 
 
 def reverse_dict(d: dict[str, str]) -> dict[str, str]:
@@ -551,7 +202,7 @@ def get_vanilla_only(log_lines):
     return diff_lines
 
 
-def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], str):
+def get_original_lines(mod_script_dir, mod_script_file, line_no) -> tuple[list[str], str]:
     p = subprocess.run(["git", 'log', f'-L{line_no},+1:{mod_script_file}'],
                        capture_output=True, encoding="utf-8", shell=True, cwd=mod_script_dir, check=True)
     raw_output = p.stdout
@@ -593,30 +244,7 @@ def get_original_lines(mod_script_dir, mod_script_file, line_no) -> (List[str], 
 #     return None, None
 
 
-# returns None if no graphics found!
-def get_graphics_on_line(line, is_mod) -> str:
-    regex = OG_CG_REGEX
-    if is_mod:
-        regex = MOD_CG_REGEX
 
-    match = regex.search(line)
-    if match:
-        return match.group(1)
-
-    return None
-
-def get_voice_on_line(line) -> str:
-    match = voicePathRegex.search(line)
-    if match:
-        return match.group(1)
-
-    return None
-
-def line_has_graphics(line, is_mod):
-    if get_graphics_on_line(line, is_mod) is None:
-        return False
-    else:
-        return True
 
 bg_match_pairs_regex_str = [
     # Outbreak
@@ -715,7 +343,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     line = line.split('//', maxsplit=1)[0]
 
     # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
-    if not line_has_graphics(line, is_mod=True):
+    if not graphics_identifier.line_has_graphics(line, is_mod=True):
         return
 
     # Convert the line into a CallData object
@@ -734,7 +362,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     og_lines, raw_git_log_output = get_original_lines(
         mod_script_dir, mod_script_file, line_index + 1)
 
-    if mod.matching_key is not None and missing_character_key in mod.matching_key:
+    if mod.matching_key is not None and common.missing_character_key in mod.matching_key:
         statistics.add_missing_character(mod.matching_key, line, og_lines)
         return
 
@@ -747,7 +375,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     og_call_data = [] #type: list[CallData]
     for l in og_lines:
         # Ignore lines which don't have graphics
-        if line_has_graphics(l, is_mod=False):
+        if graphics_identifier.line_has_graphics(l, is_mod=False):
             og_call_data.append(CallData(l, is_mod=False))
     mod.debug_og_call_data = og_call_data
 

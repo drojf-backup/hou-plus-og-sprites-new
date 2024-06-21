@@ -1,1 +1,3 @@
-stats
+stats/
+stats_temp/
+.vscode/
