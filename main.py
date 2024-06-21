@@ -521,8 +521,7 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
 
 def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
     os.makedirs(output_folder, exist_ok=True)
-    out_filename = Path(mod_script_path).stem
-    voice_db_path = os.path.join(output_folder, f'{out_filename}_voice_db.pickle')
+    voice_db_path = common.get_voice_db_path(mod_script_path)
 
     if Path(voice_db_path).exists():
         voice_match_database = VoiceMatchDatabase.deserialize(voice_db_path)
@@ -554,14 +553,14 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
                 debug_output_file.write(print_data)
 
 
+    voice_match_database.serialize(voice_db_path)
 
     # Write the output statistcs .json
     # print(f"{stats.match_ok}/{stats.total()} Failed: {stats.match_fail}")
     # print(stats.count_statistics)
+    out_filename = Path(mod_script_path).stem
     json_out_path = os.path.join(output_folder, f'{out_filename}.json')
     missing_chars_path = os.path.join(output_folder, f'{out_filename}_missing_chars.txt')
-
-    voice_match_database.serialize(voice_db_path)
 
     stats.save_as_json(json_out_path, missing_chars_path, global_result)
 

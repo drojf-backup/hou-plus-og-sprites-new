@@ -1,6 +1,8 @@
 
 from pathlib import Path
 import re
+import common
+from common import VoiceMatchDatabase
 
 ####################  Graphics Regexes ####################
 
@@ -56,7 +58,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern]):
             if is_graphics:
                 graphics_is_detected_by_matching_script(stripped_path)
 
-pattern = 'mehagashi.txt' #'*.txt'
+pattern = 'busstop01.txt' #'*.txt'
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
@@ -67,4 +69,10 @@ modded_game_cg_dir = 'D:/games/steam/steamapps/common/Higurashi When They Cry Ho
 graphics_regexes = get_graphics_regexes(modded_game_cg_dir)
 
 for modded_script_path in Path(mod_script_dir).glob(pattern):
+    # Load the matches found by the main matching script
+    db_path = common.get_voice_db_path(modded_script_path)
+    existing_matches = VoiceMatchDatabase.deserialize(db_path)
+
+    print(f"Loaded {len(existing_matches.db)} matches from [{db_path}]")
+
     verify_one_script(modded_script_path, graphics_regexes)

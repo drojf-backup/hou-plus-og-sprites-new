@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import pickle
 import re
 import graphics_identifier
@@ -146,3 +148,9 @@ class VoiceMatchDatabase:
     def deserialize(input_file: str) -> 'VoiceMatchDatabase':
         with open(input_file, 'rb') as f:
             return pickle.load(f)
+
+voice_db_folder = 'voice_db'
+
+def get_voice_db_path(mod_script_path: str) -> str:
+    os.makedirs(voice_db_folder, exist_ok=True)
+    return os.path.join(voice_db_folder, f'{Path(mod_script_path).stem}_voice_db.pickle')
