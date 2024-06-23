@@ -14,15 +14,8 @@ from typing import List
 import path_util
 import common
 from common import CallData, ModToOGMatch, VoiceBasedMatch, VoiceMatchDatabase
+import voice_util
 import graphics_identifier
-
-voicePathRegex = re.compile(r'^\s*ModPlayVoiceLS\([^,]+,[^,]+,\s*"\s*([^"]+)\s*"')
-def get_voice_on_line(line) -> str:
-    match = voicePathRegex.search(line)
-    if match:
-        return match.group(1)
-
-    return None
 
 
 class GlobalResult:
@@ -539,7 +532,7 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
         if max_lines != None and line_index > max_lines:
             break
 
-        voice_on_line = get_voice_on_line(line)
+        voice_on_line = voice_util.get_voice_on_line(line)
         if voice_on_line:
             last_voice = voice_on_line
 
