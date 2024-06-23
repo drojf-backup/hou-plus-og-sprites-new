@@ -138,6 +138,12 @@ class VoiceMatchDatabase:
             if match.mod_path == mod_path:
                 return match
 
+    # This is used to make sure all voices are covered
+    # The final output can be trimmed of 'blank' voice sections later
+    def acknowledge_voice(self, voice: str):
+        if voice not in self.db:
+            self.db[voice] = []
+
     def serialize(self, output_file: str):
         # TODO: This should really be done atomically, but since
         # this script will rarely be executed don't worry about it for now

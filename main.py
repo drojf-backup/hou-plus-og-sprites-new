@@ -517,8 +517,10 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
     voice_db_path = common.get_voice_db_path(mod_script_path)
 
     if Path(voice_db_path).exists():
+        print(f"Using existing database at [{voice_db_path}]")
         voice_match_database = VoiceMatchDatabase.deserialize(voice_db_path)
     else:
+        print(f"Creating new existing database at [{voice_db_path}]")
         voice_match_database = VoiceMatchDatabase(mod_script_path)
 
     stats = Statistics()
@@ -534,6 +536,7 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
 
         voice_on_line = voice_util.get_voice_on_line(line)
         if voice_on_line:
+            voice_match_database.acknowledge_voice(voice_on_line)
             last_voice = voice_on_line
 
         print_data = parse_line(mod_script_dir, mod_script_path,
@@ -545,7 +548,7 @@ def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file
             if print_data is not None:
                 debug_output_file.write(print_data)
 
-
+    print(f"Saving voice match databse to [{voice_db_path}]")
     voice_match_database.serialize(voice_db_path)
 
     # Write the output statistcs .json
