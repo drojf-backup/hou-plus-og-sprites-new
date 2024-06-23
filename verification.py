@@ -93,7 +93,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
                     fail_count += 1
 
     total_count = pass_count + fail_count
-    print(f"{pass_count}/{total_count} detected successfully")
+    print(f"{pass_count}/{total_count} Successful ({fail_count} Failures)")
 
 pattern = 'busstop01.txt' #'*.txt'
 

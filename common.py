@@ -9,37 +9,36 @@ missing_character_key = "ERROR_MISSING_CHARACTER"
 
 
 modSpritePathCharacterNameRegex = re.compile(
-    r'"((?:sprite)|(?:portrait))/([a-zA-Z]*)')
+    r'((?:sprite)|(?:portrait))/([a-zA-Z]*)')
 
 effectCharacterNameRegex = re.compile(
-    r'"(effect)/((:?hara)|(:?hnit)|(:?hoda)|(:?hoka)|(:?hton)|(:?hyos))')
+    r'(effect)/((:?hara)|(:?hnit)|(:?hoda)|(:?hoka)|(:?hton)|(:?hyos))')
 
 effectEyeCharacterNameRegex = re.compile(
-    r'"(effect)/eye_((:?kas)|(:?kei)|(:?me)|(:?re)|(:?sa))')
+    r'(effect)/eye_((:?kas)|(:?kei)|(:?me)|(:?re)|(:?sa))')
 
 
 class CallData:
-    def __init__(self, line, is_mod):
-        self.line = line
+    def __init__(self, line: str, is_mod: bool, path: str):
+        self.line = line # Only for debugging purposes now, as lines may contain multiple paths
         self.type = None  # type
         self.matching_key = None  # lookup_key
         self.debug_character = None
-        self.path = graphics_identifier.get_graphics_on_line(line, is_mod)
+        self.path = path
         self.name = self.path.split('/')[-1]
         self.debug_og_call_data = None
         self.is_sprite = self.path.startswith('sprite/') or self.path.startswith('portrait/')
 
         if self.path is None:
-            raise Exception(
-                f"Error (is_mod: {is_mod}): Couldn't get path from line {line}")
+            raise Exception(f"Error (is_mod: {is_mod}): Couldn't get path from line {line}")
 
         if is_mod:
             # Assume the line is a graphics call. Look for a graphics path like "sprite/kei7_warai_" or "portrait/kameda1b_odoroki_" using regex
-            match = modSpritePathCharacterNameRegex.search(line)
+            match = modSpritePathCharacterNameRegex.search(path)
             if not match:
-                match = effectCharacterNameRegex.search(line)
+                match = effectCharacterNameRegex.search(path)
             if not match:
-                match = effectEyeCharacterNameRegex.search(line)
+                match = effectEyeCharacterNameRegex.search(path)
 
             if match:
                 # Get the sprite type (containing folder), either 'sprite' or 'portrait'
@@ -49,19 +48,19 @@ class CallData:
 
                 # Special case for mob characters kumi1 and kumi2, whose names don't follow the usual convention
                 # Eg. kumi1_01_0.png and kumi2_01_0.png are different people who appear at the same time
-                if mod_character == 'kumi' and 'kumi1_' in line:
+                if mod_character == 'kumi' and 'kumi1_' in path:
                     mod_character = 'kumi1'
 
-                if mod_character == 'kumi' and 'kumi2_' in line:
+                if mod_character == 'kumi' and 'kumi2_' in path:
                     mod_character = 'kumi2'
 
-                if mod_character == 'mo' and 'mo1_' in line:
+                if mod_character == 'mo' and 'mo1_' in path:
                     mod_character = 'mo1'
 
-                if mod_character == 'mo' and 'mo2_' in line:
+                if mod_character == 'mo' and 'mo2_' in path:
                     mod_character = 'mo2'
 
-                if mod_character == 'mo' and 'mo3_' in line:
+                if mod_character == 'mo' and 'mo3_' in path:
                     mod_character = 'mo3'
 
                 self.debug_character = mod_character

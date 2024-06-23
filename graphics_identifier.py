@@ -3,42 +3,42 @@ import re
 
 MOD_CG_LIST = [
     'background/',
-    'black',
+    r'black\b',
     'chapter/',
     'credits/',
     'effect/',
-    'filter_hanyu',
+    r'filter_hanyu\b',
     'omake/',
     'portrait/',
-    'red',
+    r'red\b',
     'scene/',
     'sprite/',
     'title/',
-    'transparent',
-    'white',
-    'windo_filter',
-    'windo_filter_adv',
-    'windo_filter_nvladv',
+    r'transparent\b',
+    r'white\b',
+    r'windo_filter\b',
+    r'windo_filter_adv\b',
+    r'windo_filter_nvladv\b',
 ]
 
 OG_CG_LIST = [
     'bg/',
-    'black',
+    r'black\b',
     'chapter/',
-    'cinema_window',
-    'cinema_window_name',
+    r'cinema_window\b',
+    r'cinema_window_name\b',
     'credits/',
     'effect/',
-    'furiker_a',
-    'furiker_b',
-    'hanyuu_background',
+    r'furiker_a\b',
+    r'furiker_b\b',
+    r'hanyuu_background\b',
     'img/',
-    'no_data',
+    r'no_data\b',
     'omake/',
     'sprites/',
     'title/',
-    'white',
-    'windo_filter',
+    r'white\b',
+    r'windo_filter\b',
 ]
 
 def partial_path_to_regex(filenamefolder_list) -> re.Pattern:
@@ -46,23 +46,18 @@ def partial_path_to_regex(filenamefolder_list) -> re.Pattern:
     complete_regex = f'"((?:{item})[^"]*)"'
     return re.compile(complete_regex)
 
-OG_CG_REGEX = partial_path_to_regex(OG_CG_LIST)  # type: list[re.Pattern]
-MOD_CG_REGEX = partial_path_to_regex(MOD_CG_LIST)  # type: list[re.Pattern]
+OG_CG_REGEX = partial_path_to_regex(OG_CG_LIST)  # type: re.Pattern
+MOD_CG_REGEX = partial_path_to_regex(MOD_CG_LIST)  # type: re.Pattern
 
 # returns None if no graphics found!
-def get_graphics_on_line(line, is_mod) -> str:
+def get_graphics_path_on_line(line, is_mod) -> str:
     regex = OG_CG_REGEX
     if is_mod:
         regex = MOD_CG_REGEX
 
-    match = regex.search(line)
-    if match:
-        return match.group(1)
+    all_matches = []
+    for match in regex.finditer(line):
+        if match:
+            all_matches.append(match.group(1))
 
-    return None
-
-def line_has_graphics(line, is_mod):
-    if get_graphics_on_line(line, is_mod) is None:
-        return False
-    else:
-        return True
+    return all_matches

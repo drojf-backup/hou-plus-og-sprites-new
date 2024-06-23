@@ -329,6 +329,7 @@ def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
     return None
 
 def parse_graphics(
+        mod_path: str,
         mod_script_dir,
         mod_script_file,
         line_index: int,
@@ -343,7 +344,7 @@ def parse_graphics(
     print_data = ""
 
     # Convert the line into a CallData object
-    mod = CallData(line, is_mod=True)
+    mod = CallData(line, is_mod=True, path=mod_path)
     print_data += (f"Line No: {line_index + 1} Type: {mod.type} Key: {
                    mod.matching_key} Character: {mod.debug_character} Line: {line.strip()}\n")
 
@@ -368,11 +369,12 @@ def parse_graphics(
     # print_data += raw_git_log_output
     print_data += ">> END Git Log Output <<\n"
 
+    # Extract all graphics found in the og lines
     og_call_data = [] #type: list[CallData]
     for l in og_lines:
-        # Ignore lines which don't have graphics
-        if graphics_identifier.line_has_graphics(l, is_mod=False):
-            og_call_data.append(CallData(l, is_mod=False))
+        for og_path in graphics_identifier.get_graphics_path_on_line(l, is_mod=False):
+            og_call_data.append(CallData(l, is_mod=False, path=og_path))
+
     mod.debug_og_call_data = og_call_data
 
     if len(og_call_data) == 0:
@@ -521,11 +523,14 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     # for now just ignore commented lines
     line = line.split('//', maxsplit=1)[0]
 
-    # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
-    if not graphics_identifier.line_has_graphics(line, is_mod=True):
-        return
+    all_print_data = ""
 
-    return parse_graphics(mod_script_dir, mod_script_file, line_index, line, statistics, og_bg_lc_name_to_path, manual_name_matching, last_voice, voice_match_database)
+    for mod_graphics_path in graphics_identifier.get_graphics_path_on_line(line, is_mod=True):
+        print_data = parse_graphics(mod_graphics_path, mod_script_dir, mod_script_file, line_index, line, statistics, og_bg_lc_name_to_path, manual_name_matching, last_voice, voice_match_database)
+        if print_data:
+            all_print_data += print_data
+
+    return all_print_data
 
 
 def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
