@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import common
 from common import VoiceMatchDatabase
+import voice_util
 
 ####################  Graphics Regexes ####################
 
@@ -39,24 +40,60 @@ def path_is_graphics(path: str, graphics_regexes: list[re.Pattern]):
     return False
 
 # TODO
-def graphics_is_detected_by_matching_script(stripped_path: str):
-    pass
+def graphics_is_detected_by_matching_script(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase) -> bool:
+    # Check the voice exists in the database.
+    # If not, perhaps voice not detected in matching script, or not inserted in database properly
+    if last_voice not in existing_matches.db:
+        print(f"Error (Missing Voice): voice [{last_voice}] is in [{existing_matches.script_name}] database")
+        return False
+
+    graphics_in_voice_section = existing_matches.db[last_voice]
+
+    # Now check the graphics was in that voice section
+    for voice_match in graphics_in_voice_section:
+        if voice_match.mod_path.strip() == stripped_path:
+            return True
+
+    # If reached this point, graphics not found in that voice section.
+    # Print all the graphics which were found for that voice section for debugging.
+    print(f"Error (Graphics not found in voice section): In voice section [{last_voice}], the graphics [{stripped_path}] was not found. The following graphics were found instead:")
+    for voice_match in graphics_in_voice_section:
+        print(f" - {voice_match.mod_path}")
+
+    return False
+
 
 # TODO
 def graphics_is_mapped_by_matching_script():
     pass
 
-def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern]):
+def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase):
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
+    pass_count = 0
+    fail_count = 0
+
+    last_voice = None
+
     for line in all_lines:
         for result in string_regex.finditer(line):
+            # Record the last seen voice
+            voice_on_line = voice_util.get_voice_on_line(line)
+            if voice_on_line:
+                last_voice = voice_on_line
+
             # We don't care about leading/trailing for our purposess
             stripped_path = result.group('data').strip()
             is_graphics = path_is_graphics(stripped_path, graphics_regexes)
             if is_graphics:
-                graphics_is_detected_by_matching_script(stripped_path)
+                if graphics_is_detected_by_matching_script(last_voice, stripped_path, existing_matches):
+                    pass_count += 1
+                else:
+                    fail_count += 1
+
+    total_count = pass_count + fail_count
+    print(f"{pass_count}/{total_count} detected successfully")
 
 pattern = 'busstop01.txt' #'*.txt'
 
@@ -73,6 +110,6 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
     db_path = common.get_voice_db_path(modded_script_path)
     existing_matches = VoiceMatchDatabase.deserialize(db_path)
 
-    print(f"Loaded {len(existing_matches.db)} matches from [{db_path}]")
+    print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
-    verify_one_script(modded_script_path, graphics_regexes)
+    verify_one_script(modded_script_path, graphics_regexes, existing_matches)
