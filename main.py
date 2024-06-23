@@ -328,16 +328,19 @@ def match_by_keyword(mod: CallData, og_call_data: list[CallData]):
 
     return None
 
-def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str], last_voice: str, voice_match_database: VoiceMatchDatabase):
-    """This function expects a modded script line as input, as well other arguments describing where the line is from"""
+def parse_graphics(
+        mod_script_dir,
+        mod_script_file,
+        line_index: int,
+        line: str,
+        statistics: Statistics,
+        og_bg_lc_name_to_path: dict[str, str],
+        manual_name_matching: dict[str, str],
+        last_voice: str,
+        voice_match_database: VoiceMatchDatabase
+    ):
+
     print_data = ""
-
-    # for now just ignore commented lines
-    line = line.split('//', maxsplit=1)[0]
-
-    # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
-    if not graphics_identifier.line_has_graphics(line, is_mod=True):
-        return
 
     # Convert the line into a CallData object
     mod = CallData(line, is_mod=True)
@@ -511,6 +514,19 @@ def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index
     #     effect_match = modEffectPathRegex.search(line)
 
     return print_data
+
+def parse_line(mod_script_dir, mod_script_file, all_lines: List[str], line_index, line: str, statistics: Statistics, og_bg_lc_name_to_path: dict[str, str], manual_name_matching: dict[str, str], last_voice: str, voice_match_database: VoiceMatchDatabase):
+    """This function expects a modded script line as input, as well other arguments describing where the line is from"""
+
+    # for now just ignore commented lines
+    line = line.split('//', maxsplit=1)[0]
+
+    # Only process lines which look like they touch graphics (by the file paths accessed, like "sprite/" or "background/")
+    if not graphics_identifier.line_has_graphics(line, is_mod=True):
+        return
+
+    return parse_graphics(mod_script_dir, mod_script_file, line_index, line, statistics, og_bg_lc_name_to_path, manual_name_matching, last_voice, voice_match_database)
+
 
 def scan_one_script(mod_script_dir: str, mod_script_path: str, debug_output_file, global_result: GlobalResult, output_folder: str):
     os.makedirs(output_folder, exist_ok=True)
