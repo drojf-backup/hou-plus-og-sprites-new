@@ -359,8 +359,10 @@ def parse_graphics(
     og_lines, raw_git_log_output = get_original_lines(
         mod_script_dir, mod_script_file, line_index + 1)
 
+    # If this is a sprite, but the character is not recognized, just give up as we need to update the character database
     if mod.matching_key is not None and common.missing_character_key in mod.matching_key:
         statistics.add_missing_character(mod.matching_key, line, og_lines)
+        voice_match_database.set(VoiceBasedMatch(last_voice, mod, None))
         return
 
     print_data += ">> Raw Git Log Output (vanilla -> mod) <<\n"
@@ -387,6 +389,7 @@ def parse_graphics(
 
         # print(msg)
         print_data += msg
+        voice_match_database.set(VoiceBasedMatch(last_voice, mod, None))
         return print_data
 
     # og_call_data = [CallData(l, is_mod=False) for l in og_lines]
