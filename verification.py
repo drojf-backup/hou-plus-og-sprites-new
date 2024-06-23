@@ -76,7 +76,10 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
 
     last_voice = None
 
-    for line in all_lines:
+    for raw_line in all_lines:
+        # Delete comments before processing
+        line = raw_line.split('//', maxsplit=1)[0]
+
         for result in string_regex.finditer(line):
             # Record the last seen voice
             voice_on_line = voice_util.get_voice_on_line(line)
