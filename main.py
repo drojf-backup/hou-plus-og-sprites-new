@@ -618,11 +618,16 @@ mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Up
 
 output_folder = 'stats_temp'
 
+debug_folder = 'script_with_debug'
+os.makedirs(debug_folder, exist_ok=True)
+
 # TODO: add global stats across all items? only write out once all items processed
 global_result = GlobalResult()
 
 for modded_script_path in Path(mod_script_dir).glob(pattern):
-    scan_one_script(mod_script_dir, modded_script_path, debug_output_file=None, global_result=global_result, output_folder=output_folder)
+    debug_output_path = os.path.join(debug_folder, modded_script_path.name)
+    with open(debug_output_path, 'w', encoding='utf-8') as debug_output_file:
+        scan_one_script(mod_script_dir, modded_script_path, debug_output_file, global_result=global_result, output_folder=output_folder)
 
 if global_result.missing_char_detected:
     print("<<<<<<<<<<< WARNING: one or more missing from the mod_to_name or og_to_name table, please update or matching will be incomplete! >>>>>>>>>>>>>>")
