@@ -80,7 +80,7 @@ def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existin
 
     return CheckResult(False, False)
 
-def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase):
+def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase, statistics: dict[str, list[str, int]]):
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
@@ -130,9 +130,12 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
 
     # TODO: generate proper fallback matching?
     fallback_matching = {
+        # Special Images
         'black' : 'black',
         'white' : 'white',
         'red' : 'red',
+
+        # Effects
         'effect/left' : 'effect/left',
         'effect/up' : 'effect/up',
         'effect/right' : 'effect/right',
@@ -145,13 +148,22 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'effect/bullet_1d' : 'effect/bullet_1d',
         'effect/maskaa' : 'effect/aa',
         'effect/aka1' : 'effect/aka1',
+
+        # Sprites Busstop
+        'sprite/hara1a_04_' : 'sprites/ara/ara_d7a',
+
+        # Backgrounds Busstop
+        'background/hina_bus_03' : 'bg/hina/bus_03', # Note: this fails 21 times
     }
 
     print("Unique failed matches not covered by fallback:")
     for mod_path, failed_matches in unique_unmatched.items():
         if mod_path not in fallback_matching:
+            statistics_helper = '<Never Matched Previously>'
+            if mod_path in statistics:
+                statistics_helper = statistics[mod_path]
             # TODO: print most common match to aid in developer matching
-            print(f" - {mod_path} ({len(failed_matches)} times)")
+            print(f" - {mod_path} ({len(failed_matches)} times) | {statistics_helper}")
 
     # TODO: Use facial expression in filename to match sprites
     # TODO: For Busstop, map numbers to facial expression
@@ -208,8 +220,8 @@ def collect_sorted_statistics(mod_script_dir: str, pattern: str) -> dict[str, li
 
     return sorted_statistics
 
-
-pattern = '*.txt'
+pattern = 'busstop01.txt'
+statistics_pattern = pattern #'*.txt' # Matching from other scripts will give more averaged results, but this may cause inconsistencies if one script uses one sprite and another uses other sprites
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
@@ -222,7 +234,7 @@ graphics_regexes = get_graphics_regexes(modded_game_cg_dir)
 scanned_any_scripts = False
 
 # Firstly, collect statistics from all chapters
-statistics = collect_sorted_statistics(mod_script_dir, pattern)
+statistics = collect_sorted_statistics(mod_script_dir, statistics_pattern)
 
 # TODO: save to file?
 # for mod_path, og_paths in statistics.items():
@@ -237,7 +249,7 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
 
     print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
-    verify_one_script(modded_script_path, graphics_regexes, existing_matches)
+    verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
 
 if not scanned_any_scripts:
     raise Exception("No files were scanned. Are you sure pattern is correct?")
