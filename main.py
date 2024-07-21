@@ -422,18 +422,18 @@ def parse_graphics(
             # First try to do exact match if the path contains a matching folder
             if mod_to_og_match is None:
                 for og in og_call_data:
-                    if f'/{mod.matching_key}/' in og.line:
+                    if f'/{mod.matching_key}/' in og.path:
                         mod_to_og_match = ModToOGMatch(og, None)
-                        print_data += (f"Matched by matching key (exact folder): {mod_to_og_match}\n")
-                        # TODO: insert break here?
+                        print_data += (f"Matched by matching key in path (exact folder): {mod_to_og_match}\n")
+                        break
 
-            # Then just match anywhere in the string
+            # Then just match anywhere in the path
             if mod_to_og_match is None:
                 for og in og_call_data:
-                    if mod.matching_key in og.line:
+                    if mod.matching_key in og.path:
                         mod_to_og_match = ModToOGMatch(og, None)
-                        print_data += (f"Matched by matching key (anywhere in string): {mod_to_og_match}\n")
-                        # TODO: insert break here?
+                        print_data += (f"Matched by matching key in path (anywhere in path): {mod_to_og_match}\n")
+                        break
 
     # Try matching by same name match
     if mod_to_og_match is None:
