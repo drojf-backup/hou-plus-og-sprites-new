@@ -127,7 +127,19 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
     for mod_path, failed_matches in unique_unmatched.items():
         print(f" - {mod_path} ({len(failed_matches)} times)")
 
-pattern = 'busstop01.txt' #'*.txt'
+    # TODO: generate proper fallback matching?
+    fallback_matching = {
+        'black' : 'black',
+        'white' : 'white',
+        'red' : 'red',
+    }
+
+    print("Unique failed matches not covered by fallback:")
+    for mod_path, failed_matches in unique_unmatched.items():
+        if mod_path not in fallback_matching:
+            print(f" - {mod_path} ({len(failed_matches)} times)")
+
+
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
