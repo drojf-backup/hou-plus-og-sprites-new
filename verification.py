@@ -46,7 +46,7 @@ class CheckResult:
 
 # This checks whether a particular graphics is 'detected'. This avoids errors where the matching script
 # doesn't even see a graphics path, so it will never match that graphics path against anything
-def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase) -> CheckResult:
+def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase, unique_unmatched: dict[str, list[VoiceMatchDatabase]]) -> CheckResult:
     # Check the voice exists in the database.
     # If not, perhaps voice not detected in matching script, or not inserted in database properly
     if last_voice not in existing_matches.db:
@@ -63,6 +63,11 @@ def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existin
                 has_mapping = True
             else:
                 print(f'No match for {voice_match.mod_path} | {voice_match.voice}')
+
+                # Collect unmatched mod paths to display at the end
+                if voice_match.mod_path not in unique_unmatched:
+                    unique_unmatched[voice_match.mod_path] = []
+                unique_unmatched[voice_match.mod_path].append(voice_match)
 
             return CheckResult(True, has_mapping)
 
@@ -86,6 +91,8 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
 
     last_voice = None
 
+    unique_unmatched = {} #type: dict[str, list[VoiceMatchDatabase]]
+
     for raw_line in all_lines:
         # Delete comments before processing
         line = raw_line.split('//', maxsplit=1)[0]
@@ -100,7 +107,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
             stripped_path = result.group('data').strip()
             is_graphics = path_is_graphics(stripped_path, graphics_regexes)
             if is_graphics:
-                check_result = graphics_is_detected_and_mapped(last_voice, stripped_path, existing_matches)
+                check_result = graphics_is_detected_and_mapped(last_voice, stripped_path, existing_matches, unique_unmatched)
                 if check_result.detected:
                     detect_pass_count += 1
                 else:
@@ -115,6 +122,10 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
     print(f"DETECTION: {detect_pass_count}/{total_count} Successful ({detect_fail_count} Failures)")
     total_count = mapping_pass_count + mapping_fail_count
     print(f"MAPPING: {mapping_pass_count}/{total_count} Successful ({mapping_fail_count} Failures)")
+
+    print("Unique failed matches:")
+    for mod_path, failed_matches in unique_unmatched.items():
+        print(f" - {mod_path} ({len(failed_matches)} times)")
 
 pattern = 'busstop01.txt' #'*.txt'
 
