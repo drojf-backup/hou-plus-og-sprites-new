@@ -104,7 +104,7 @@ pattern = 'busstop01.txt' #'*.txt'
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 
-modded_game_cg_dir = 'D:/games/steam/steamapps/common/Higurashi When They Cry Hou+/HigurashiEp10_Data/StreamingAssets/CG'
+modded_game_cg_dir = 'D:/games/steam/steamapps/common/Higurashi When They Cry Hou+ Modded/HigurashiEp10_Data/StreamingAssets/CG'
 
 # Get a list of regexes which indicate a path is a graphics path
 graphics_regexes = get_graphics_regexes(modded_game_cg_dir)
