@@ -132,6 +132,18 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'black' : 'black',
         'white' : 'white',
         'red' : 'red',
+        'effect/left' : 'effect/left',
+        'effect/up' : 'effect/up',
+        'effect/right' : 'effect/right',
+        'effect/mask1' : 'effect/1',
+        'effect/mask2' : 'effect/2',
+        'effect/mask4' : 'effect/4',
+        'effect/bullet_1a' : 'effect/bullet_1a',
+        'effect/bullet_1b' : 'effect/bullet_1b',
+        'effect/bullet_1c' : 'effect/bullet_1c',
+        'effect/bullet_1d' : 'effect/bullet_1d',
+        'effect/maskaa' : 'effect/aa',
+        'effect/aka1' : 'effect/aka1',
     }
 
     print("Unique failed matches not covered by fallback:")
@@ -141,6 +153,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
             print(f" - {mod_path} ({len(failed_matches)} times)")
 
 # TODO generate match statistics across all scripts to hint to developer what the manual mapping should be
+# Use 'stats' folder?
 def generate_match_statistics():
     pass
 
