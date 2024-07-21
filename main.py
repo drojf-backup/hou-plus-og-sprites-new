@@ -422,7 +422,7 @@ def parse_graphics(
             # First try to do exact match if the path contains a matching folder
             if mod_to_og_match is None:
                 for og in og_call_data:
-                    if f'/{mod.matching_key}/' in og.path:
+                    if og.is_sprite and f'/{mod.matching_key}/' in og.path:
                         mod_to_og_match = ModToOGMatch(og, None)
                         print_data += (f"Matched by matching key in path (exact folder): {mod_to_og_match}\n")
                         break
@@ -430,7 +430,7 @@ def parse_graphics(
             # Then just match anywhere in the path
             if mod_to_og_match is None:
                 for og in og_call_data:
-                    if mod.matching_key in og.path:
+                    if og.is_sprite and mod.matching_key in og.path:
                         mod_to_og_match = ModToOGMatch(og, None)
                         print_data += (f"Matched by matching key in path (anywhere in path): {mod_to_og_match}\n")
                         break
