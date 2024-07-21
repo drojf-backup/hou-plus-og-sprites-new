@@ -137,9 +137,12 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
     print("Unique failed matches not covered by fallback:")
     for mod_path, failed_matches in unique_unmatched.items():
         if mod_path not in fallback_matching:
+            # TODO: print most common match to aid in developer matching
             print(f" - {mod_path} ({len(failed_matches)} times)")
 
-
+# TODO generate match statistics across all scripts to hint to developer what the manual mapping should be
+def generate_match_statistics():
+    pass
 
 
 pattern = 'busstop01.txt'
