@@ -39,21 +39,32 @@ def path_is_graphics(path: str, graphics_regexes: list[re.Pattern]):
 
     return False
 
+class CheckResult:
+    def __init__(self, detected, matched):
+        self.detected = detected
+        self.mapped = matched
+
 # This checks whether a particular graphics is 'detected'. This avoids errors where the matching script
 # doesn't even see a graphics path, so it will never match that graphics path against anything
-def graphics_is_detected_by_matching_script(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase) -> bool:
+def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase) -> CheckResult:
     # Check the voice exists in the database.
     # If not, perhaps voice not detected in matching script, or not inserted in database properly
     if last_voice not in existing_matches.db:
         print(f"Error (Missing Voice): voice [{last_voice}] is in [{existing_matches.script_name}] database")
-        return False
+        return CheckResult(False, False)
 
     graphics_in_voice_section = existing_matches.db[last_voice]
 
     # Now check the graphics was in that voice section
     for voice_match in graphics_in_voice_section:
         if voice_match.mod_path.strip() == stripped_path:
-            return True
+            has_mapping = False
+            if voice_match.og_path and str(voice_match.og_path).strip():
+                has_mapping = True
+            else:
+                print(f'No match for {voice_match.mod_path} | {voice_match.voice}')
+
+            return CheckResult(True, has_mapping)
 
     # If reached this point, graphics not found in that voice section.
     # Print all the graphics which were found for that voice section for debugging.
@@ -61,19 +72,17 @@ def graphics_is_detected_by_matching_script(last_voice: str, stripped_path: str,
     for voice_match in graphics_in_voice_section:
         print(f" - {voice_match.mod_path}")
 
-    return False
-
-
-# TODO: This checks whether every MOD graphics is mapped against a corresponding voice + OG graphics.
-def graphics_is_mapped_by_matching_script():
-    pass
+    return CheckResult(False, False)
 
 def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase):
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
-    pass_count = 0
-    fail_count = 0
+    detect_pass_count = 0
+    detect_fail_count = 0
+
+    mapping_pass_count = 0
+    mapping_fail_count = 0
 
     last_voice = None
 
@@ -91,13 +100,21 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
             stripped_path = result.group('data').strip()
             is_graphics = path_is_graphics(stripped_path, graphics_regexes)
             if is_graphics:
-                if graphics_is_detected_by_matching_script(last_voice, stripped_path, existing_matches):
-                    pass_count += 1
+                check_result = graphics_is_detected_and_mapped(last_voice, stripped_path, existing_matches)
+                if check_result.detected:
+                    detect_pass_count += 1
                 else:
-                    fail_count += 1
+                    detect_fail_count += 1
 
-    total_count = pass_count + fail_count
-    print(f"{pass_count}/{total_count} Successful ({fail_count} Failures)")
+                if check_result.mapped:
+                    mapping_pass_count += 1
+                else:
+                    mapping_fail_count += 1
+
+    total_count = detect_pass_count + detect_fail_count
+    print(f"DETECTION: {detect_pass_count}/{total_count} Successful ({detect_fail_count} Failures)")
+    total_count = mapping_pass_count + mapping_fail_count
+    print(f"MAPPING: {mapping_pass_count}/{total_count} Successful ({mapping_fail_count} Failures)")
 
 pattern = 'busstop01.txt' #'*.txt'
 
