@@ -141,6 +141,9 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
 
 
 
+
+pattern = 'busstop01.txt'
+
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
 
