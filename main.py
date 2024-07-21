@@ -603,7 +603,7 @@ max_lines = None
 pattern = '*.txt'
 
 # Build a mapping from filename -> path for unmodded CGs, except sprites
-unmodded_cg = 'D:/games/steam/steamapps/common/Higurashi When They Cry Hou+ Unmodded/HigurashiEp10_Data/StreamingAssets/CG'
+unmodded_cg = 'D:/games/steam/steamapps/common/Higurashi When They Cry Hou+/HigurashiEp10_Data/StreamingAssets/CG'
 
 if not os.path.exists(unmodded_cg):
     raise Exception(f"Unmodded CG path doesn't exist: {unmodded_cg}")
