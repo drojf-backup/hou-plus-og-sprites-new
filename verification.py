@@ -39,7 +39,8 @@ def path_is_graphics(path: str, graphics_regexes: list[re.Pattern]):
 
     return False
 
-# TODO
+# This checks whether a particular graphics is 'detected'. This avoids errors where the matching script
+# doesn't even see a graphics path, so it will never match that graphics path against anything
 def graphics_is_detected_by_matching_script(last_voice: str, stripped_path: str, existing_matches: VoiceMatchDatabase) -> bool:
     # Check the voice exists in the database.
     # If not, perhaps voice not detected in matching script, or not inserted in database properly
@@ -63,7 +64,7 @@ def graphics_is_detected_by_matching_script(last_voice: str, stripped_path: str,
     return False
 
 
-# TODO
+# TODO: This checks whether every MOD graphics is mapped against a corresponding voice + OG graphics.
 def graphics_is_mapped_by_matching_script():
     pass
 
