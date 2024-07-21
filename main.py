@@ -475,7 +475,10 @@ def parse_graphics(
 
     if mod_to_og_match is None:
         print_data += ("Failed to match line\n")
-        print(f"Failed to match '{mod.name}' line: {line.strip()}")
+        print(f"Failed to match '{mod.name}' line: {line.strip()} lastVoice: {last_voice}")
+        for og in og_call_data:
+            print(f"- Type: {og.type} Matching Key: {og.matching_key} Line: {og.line.strip()}")
+
         statistics.match_fail += 1
 
         # Record what possible matches there could be for analysis
