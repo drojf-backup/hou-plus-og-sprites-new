@@ -371,26 +371,28 @@ def parse_graphics(
     # print_data += raw_git_log_output
     print_data += ">> END Git Log Output <<\n"
 
+    # Now try to match lines using various methods
+    mod_to_og_match = None
+
     # Extract all graphics found in the og lines
     og_call_data = [] #type: list[CallData]
-    for l in og_lines:
-        for og_path in graphics_identifier.get_graphics_path_on_line(l, is_mod=False):
-            og_call_data.append(CallData(l, is_mod=False, path=og_path))
+    if mod_to_og_match is None:
+        for l in og_lines:
+            for og_path in graphics_identifier.get_graphics_path_on_line(l, is_mod=False):
+                og_call_data.append(CallData(l, is_mod=False, path=og_path))
 
-    mod.debug_og_call_data = og_call_data
+        mod.debug_og_call_data = og_call_data
 
-    if len(og_call_data) == 0:
-        msg = f'>> No OG graphics for {line}\n'
+        if len(og_call_data) == 0:
+            msg = f'>> No OG graphics for {line}\n'
 
-        if len(og_lines) > 0:
-            msg += 'OG lines were:\n'
-            for l in og_lines:
-                msg += f"{l}\n"
+            if len(og_lines) > 0:
+                msg += 'OG lines were:\n'
+                for l in og_lines:
+                    msg += f"{l}\n"
 
-        # print(msg)
-        print_data += msg
-        voice_match_database.set(VoiceBasedMatch(last_voice, mod, None))
-        return print_data
+            # print(msg)
+            print_data += msg
 
     # og_call_data = [CallData(l, is_mod=False) for l in og_lines]
 
@@ -403,9 +405,6 @@ def parse_graphics(
                             og.line} does not start with a +")
 
     print_data += ("\n")
-
-    # Now try to match lines using various methods
-    mod_to_og_match = None
 
     # if len(og_lines) == 1:
     #     matched_line = og_lines[0]
