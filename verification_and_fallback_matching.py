@@ -155,7 +155,11 @@ modded_game_cg_dir = 'D:/games/steam/steamapps/common/Higurashi When They Cry Ho
 # Get a list of regexes which indicate a path is a graphics path
 graphics_regexes = get_graphics_regexes(modded_game_cg_dir)
 
+scanned_any_scripts = False
+
 for modded_script_path in Path(mod_script_dir).glob(pattern):
+    scanned_any_scripts = True
+
     # Load the matches found by the main matching script
     db_path = common.get_voice_db_path(modded_script_path)
     existing_matches = VoiceMatchDatabase.deserialize(db_path)
@@ -163,3 +167,6 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
     print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
     verify_one_script(modded_script_path, graphics_regexes, existing_matches)
+
+if not scanned_any_scripts:
+    raise Exception("No files were scanned. Are you sure pattern is correct?")
