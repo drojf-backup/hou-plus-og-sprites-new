@@ -414,9 +414,9 @@ def parse_graphics(
     # scene folder are special CGs, so dont' try to match them
     if mod_to_og_match is None:
         if mod.path.startswith('scene/'):
-            mod_to_og_match = ModToOGMatch(None, 'SPECIAL_SCENE')
+            mod_to_og_match = ModToOGMatch(None, '<SPECIAL_SCENE>')
         elif textRegex.search(mod.path):
-            mod_to_og_match = ModToOGMatch(None, 'SPECIAL_TEXT_EFFECT')
+            mod_to_og_match = ModToOGMatch(None, '<SPECIAL_TEXT_EFFECT>')
 
     if mod_to_og_match is None:
         if mod.matching_key:
