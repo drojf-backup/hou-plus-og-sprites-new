@@ -1,4 +1,5 @@
 
+import operator
 from pathlib import Path
 import re
 import common
@@ -152,13 +153,63 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
             # TODO: print most common match to aid in developer matching
             print(f" - {mod_path} ({len(failed_matches)} times)")
 
+    # TODO: Use facial expression in filename to match sprites
+    # TODO: For Busstop, map numbers to facial expression
+
+    # TODO: save final mapping instead of just printing it out
+
+
 # TODO generate match statistics across all scripts to hint to developer what the manual mapping should be
 # Use 'stats' folder?
-def generate_match_statistics():
-    pass
+# statistics = path -> match statistics (ignoring lastVoice)
+# Should probably have used python's built in statistics, but I forgot to
+def collect_statistics_from_db(existing_matches: VoiceMatchDatabase, statistics: dict[str, dict[str, int]]):
+    for _, voiceMatches in existing_matches.db.items():
+        for match in voiceMatches:
+            if match.mod_path is None:
+                continue
+
+            if match.og_path is None:
+                continue
+
+            mod_path = str(match.mod_path).lower()
+            og_path = str(match.og_path).lower()
+
+            # Create new dict for mod path -> dictionary of count per each og_path
+            if mod_path not in statistics:
+                statistics[mod_path] = {}
+
+            count_dict_for_mod_path = statistics[mod_path]
+
+            # Increment the number of times og_path was seen
+            if og_path not in count_dict_for_mod_path:
+                count_dict_for_mod_path[og_path] = 0
+
+            count_dict_for_mod_path[og_path] += 1
 
 
-pattern = 'busstop01.txt'
+def collect_statistics(mod_script_dir: str, pattern: str) -> dict[str, dict[str, int]]:
+    statistics = {} # dict[str, dict[str, int]]
+
+    for modded_script_path in Path(mod_script_dir).glob(pattern):
+        db_path = common.get_voice_db_path(modded_script_path)
+        existing_matches = VoiceMatchDatabase.deserialize(db_path)
+        collect_statistics_from_db(existing_matches, statistics)
+
+    return statistics
+
+def collect_sorted_statistics(mod_script_dir: str, pattern: str) -> dict[str, list[str, int]]:
+    unsorted_statistics = collect_statistics(mod_script_dir, pattern)
+
+    sorted_statistics = {}
+
+    for mod_path, og_path_counts in unsorted_statistics.items():
+        sorted_statistics[mod_path] = sorted(og_path_counts.items(), key=operator.itemgetter(1), reverse=True)
+
+    return sorted_statistics
+
+
+pattern = '*.txt'
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
@@ -169,6 +220,13 @@ modded_game_cg_dir = 'D:/games/steam/steamapps/common/Higurashi When They Cry Ho
 graphics_regexes = get_graphics_regexes(modded_game_cg_dir)
 
 scanned_any_scripts = False
+
+# Firstly, collect statistics from all chapters
+statistics = collect_sorted_statistics(mod_script_dir, pattern)
+
+# TODO: save to file?
+# for mod_path, og_paths in statistics.items():
+#     print(f'{mod_path}: {og_paths}')
 
 for modded_script_path in Path(mod_script_dir).glob(pattern):
     scanned_any_scripts = True
