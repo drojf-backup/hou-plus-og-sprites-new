@@ -2,3 +2,5 @@ stats/
 stats_temp/
 .vscode/
 __pycache__/
+script_with_debug/
+voice_db/
