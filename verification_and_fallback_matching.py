@@ -88,7 +88,7 @@ def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existin
 
     return CheckResult(False, False)
 
-def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase, statistics: dict[str, list[str, int]]):
+def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase, statistics: dict[str, list[str, int]]) -> list[str]:
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
@@ -192,6 +192,11 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'effect/eye_base_b' : '<USE_MOD_VERSION>',
         'effect/eye_base_r' : '<USE_MOD_VERSION>',
         'effect/eye_kas' : '<NEED_IMAGE_REPLACEMENT>', # TODO: need to replace eye images with OG versions! Copy from preivous chapter?
+
+        # Sprites Mehagashi
+        # TODO: This is a silhouette cutout of keiichi. I'm not if just reusing the same image
+        # instead of a special silhouette will work, but lets see if it just works.
+        'effect/kei' : 'sprites/keiiti/2021/main/kei_ikari1',
     }
 
     debug_output = []
@@ -225,6 +230,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
     else:
         print("PASS: All matches covered by a fallback")
 
+    return debug_output
 
     # TODO: Use facial expression in filename to match sprites
     # TODO: For Busstop, map numbers to facial expression
@@ -281,8 +287,8 @@ def collect_sorted_statistics(mod_script_dir: str, pattern: str) -> dict[str, li
 
     return sorted_statistics
 
-pattern = 'busstop01.txt'
-statistics_pattern = pattern #'*.txt' # Matching from other scripts will give more averaged results, but this may cause inconsistencies if one script uses one sprite and another uses other sprites
+pattern = '*.txt'
+statistics_pattern = '*.txt' #'*.txt' # Matching from other scripts will give more averaged results, but this may cause inconsistencies if one script uses one sprite and another uses other sprites
 
 # unmodded_input_file = 'C:/Program Files (x86)/Steam/steamapps/common/Higurashi When They Cry Hou+ Installer Test/HigurashiEp10_Data/StreamingAssets/Scripts/mehagashi.txt'
 mod_script_dir = 'D:/drojf/large_projects/umineko/HIGURASHI_REPOS/10 hou-plus/Update/'
@@ -301,6 +307,8 @@ statistics = collect_sorted_statistics(mod_script_dir, statistics_pattern)
 # for mod_path, og_paths in statistics.items():
 #     print(f'{mod_path}: {og_paths}')
 
+output_per_chapter = []
+
 for modded_script_path in Path(mod_script_dir).glob(pattern):
     scanned_any_scripts = True
 
@@ -310,7 +318,19 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
 
     print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
-    verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
+    debug_output = verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
+
+    output_per_chapter.append((Path(modded_script_path).stem, debug_output))
+
+print("\n------------ Summary per script ------------")
+for script_name, debug_output_list in output_per_chapter:
+    if debug_output_list:
+        print(f"{script_name} - Missing items for :")
+        for line in debug_output_list:
+            print(line)
+    else:
+        print(f"{script_name} - PASS")
+
 
 if not scanned_any_scripts:
     raise Exception("No files were scanned. Are you sure pattern is correct?")
