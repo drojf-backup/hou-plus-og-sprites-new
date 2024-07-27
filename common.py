@@ -27,7 +27,13 @@ class CallData:
         self.path = path
         self.name = self.path.split('/')[-1]
         self.debug_og_call_data = None
-        self.is_sprite = self.path.startswith('sprite/') or self.path.startswith('portrait/')
+        if is_mod:
+            # Modded sprites in the 'sprite'/'portrait' folder (note sprites not plural)
+            self.is_sprite = self.path.startswith('sprite/') or self.path.startswith('portrait/')
+        else:
+            # Unmodded mainly has sprites in the 'sprites' folder (note sprties is plural with 's')
+            self.is_sprite = self.path.startswith('sprites/')
+
 
         if self.path is None:
             raise Exception(f"Error (is_mod: {is_mod}): Couldn't get path from line {line}")
