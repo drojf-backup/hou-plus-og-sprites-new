@@ -161,18 +161,20 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'effect/furiker_c' : 'effect/f_c',
 
         # Sprites Busstop
-        'sprite/hara1a_04_' : 'sprites/ara/ara_d7a',
+        # 'sprite/hara1a_04_' : 'sprites/ara/ara_d7a', # Not needed due to improved matching
         'effect/oyasiro' : 'sprites/oya/oya_d5', # Our mod actually draws this 'effect' as a sprite using DrawBustshot(...) (outline of hanyuu/oyashiro)
         'portrait/hara1a_01_' : 'sprites/ara/ara_d1', # This has been modified in our mod so that the voices match better. In the unmodded game it is sprites/ton/ton_d4a instead
         'portrait/hmi2a_13_': 'sprites/mio/mio_d14',
 
         # Backgrounds Busstop
-        'background/hina_bus_03' : 'bg/hina/bus_03', # Note: this fails 21 times
+        # 'background/hina_bus_03' : 'bg/hina/bus_03', # Not needed due to improved matching # Note: this fails 21 times
         'background/damu2' : 'bg/mizube/y_damu2', # Not sure if right imaage, is greyscale
         'background/damu4' : 'bg/hina/damu1m', # Not sure if right imaage, is greyscale and looks different
 
         # Sprites Outbreak (outbreak01_1.txt)
         'sprite/keisen_shinken_' : 'sprites/keiiti/sifuku_b/kei_3b', # Kei holding bat in action pose - replaced with kei with bat in normal pose
+
+        # Sprites Kamikashimashi (outbreak02_1.txt)
         'effect/v_hurricane' : '<USE_MOD_VERSION>', # No equivalent mask so just use mod's mask (OG game just draws efe/different_spiral_1a)
         'effect/eye_base_b' : '<USE_MOD_VERSION>',
         'effect/eye_base_r' : '<USE_MOD_VERSION>',
