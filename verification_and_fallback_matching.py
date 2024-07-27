@@ -156,16 +156,24 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'effect/bullet_1d' : 'effect/bullet_1d',
         'effect/maskaa' : 'effect/aa',
         'effect/aka1' : 'effect/aka1',
+        'effect/furiker_a' : 'effect/f_a',
+        'effect/furiker_b' : 'effect/f_b',
+        'effect/furiker_c' : 'effect/f_c',
 
         # Sprites Busstop
         'sprite/hara1a_04_' : 'sprites/ara/ara_d7a',
+        'effect/oyasiro' : 'sprites/oya/oya_d5', # Our mod actually draws this 'effect' as a sprite using DrawBustshot(...) (outline of hanyuu/oyashiro)
+        'portrait/hara1a_01_' : 'sprites/ton/ton_d4a', # I think this is a bug in our mod, remove if not correct
+        'portrait/hmi2a_13_': 'sprites/mio/mio_d14',
 
         # Backgrounds Busstop
         'background/hina_bus_03' : 'bg/hina/bus_03', # Note: this fails 21 times
+        'background/damu2' : 'bg/mizube/y_damu2', # Not sure if right imaage, is greyscale
+        'background/damu4' : 'bg/hina/damu1m', # Not sure if right imaage, is greyscale and looks different
     }
 
-    print("Unique failed matches not covered by any fallback:")
 
+    debug_output = []
     fallback_matches = {} # type: dict[str, FallbackMatch]
 
     for mod_path, failed_matches in unique_unmatched.items():
@@ -186,7 +194,15 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         if match_path is not None:
             fallback_matches[mod_path] = FallbackMatch(match_path, match_source_description)
         else:
-            print(f" - {mod_path} ({len(failed_matches)} times) | {maybe_statistics_for_path}")
+            debug_output.append(f" - {mod_path} ({len(failed_matches)} times) | {maybe_statistics_for_path}")
+
+    num_fallback_matches = len(debug_output)
+    if num_fallback_matches > 0:
+        print(f"Unique failed matches not covered by any fallback: {num_fallback_matches}")
+        for line in debug_output:
+            print(line)
+    else:
+        print("PASS: All matches covered by a fallback")
 
 
     # TODO: Use facial expression in filename to match sprites
