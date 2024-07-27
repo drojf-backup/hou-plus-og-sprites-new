@@ -6,6 +6,13 @@ import common
 from common import VoiceMatchDatabase
 import voice_util
 
+PRINT_FAILED_MATCHES = False
+
+class FallbackMatch:
+    def __init__(self, fallback_match_path: str, source_description: str) -> None:
+        self.fallback_match_path = fallback_match_path
+        self.source_description = source_description
+
 ####################  Graphics Regexes ####################
 
 def get_graphics_regexes(modded_game_cg_dir: str) -> list[re.Pattern]:
@@ -63,7 +70,8 @@ def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existin
             if voice_match.og_path and str(voice_match.og_path).strip():
                 has_mapping = True
             else:
-                print(f'No match for {voice_match.mod_path} | {voice_match.voice}')
+                if PRINT_FAILED_MATCHES:
+                    print(f'No match for {voice_match.mod_path} | {voice_match.voice}')
 
                 # Collect unmatched mod paths to display at the end
                 if voice_match.mod_path not in unique_unmatched:
@@ -156,14 +164,30 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'background/hina_bus_03' : 'bg/hina/bus_03', # Note: this fails 21 times
     }
 
-    print("Unique failed matches not covered by fallback:")
+    print("Unique failed matches not covered by any fallback:")
+
+    fallback_matches = {} # type: dict[str, FallbackMatch]
+
     for mod_path, failed_matches in unique_unmatched.items():
-        if mod_path not in fallback_matching:
-            statistics_helper = '<Never Matched Previously>'
-            if mod_path in statistics:
-                statistics_helper = statistics[mod_path]
-            # TODO: print most common match to aid in developer matching
-            print(f" - {mod_path} ({len(failed_matches)} times) | {statistics_helper}")
+        match_path = None
+        match_source_description = 'No Match'
+
+        maybe_statistics_for_path = statistics.get(mod_path, None)
+
+        if match_path is None:
+            match_path = fallback_matching.get(mod_path, None)
+            match_source_description = 'Manual Fallback List'
+
+        if match_path is None:
+            if maybe_statistics_for_path:
+                match_path, _match_count = maybe_statistics_for_path[0]
+                match_source_description = f'Statistically most popular previous match ({maybe_statistics_for_path})'
+
+        if match_path is not None:
+            fallback_matches[mod_path] = FallbackMatch(match_path, match_source_description)
+        else:
+            print(f" - {mod_path} ({len(failed_matches)} times) | {maybe_statistics_for_path}")
+
 
     # TODO: Use facial expression in filename to match sprites
     # TODO: For Busstop, map numbers to facial expression
