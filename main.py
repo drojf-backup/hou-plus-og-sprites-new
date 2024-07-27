@@ -108,11 +108,11 @@ class Statistics:
     def record_guesses(self, mod: CallData, og_calls: list[CallData]):
         if mod.is_sprite:
             for og_call in og_calls:
-                if og_call.path.startswith('sprites/') or og_call.path.startswith('effect/'):
+                if og_call.is_sprite or og_call.path.startswith('effect/'):
                     Statistics.add_guess(self.sprite_guesses, mod, og_call)
         else:
             for og_call in og_calls:
-                if og_call.path.startswith('bg/') or og_call.path.startswith('effect/'):
+                if not og_call.is_sprite or og_call.path.startswith('effect/'):
                     Statistics.add_guess(self.bg_guesses, mod, og_call)
 
     @staticmethod
@@ -472,6 +472,21 @@ def parse_graphics(
         keyword_match = match_by_keyword(mod, og_call_data)
         if keyword_match:
             mod_to_og_match = keyword_match
+
+    # Try to match by guessing for BGs, if there is only one possible option it could be
+    if mod_to_og_match is None:
+        if not mod.is_sprite:
+            last_match = None
+            match_count = 0
+            for og in og_call_data:
+                if not og.is_sprite:
+                    if mod.path.startswith('background/') and og.path.startswith('bg/'):
+                        last_match = og
+                        match_count += 1
+
+            if match_count == 1:
+                print(f"Matched Background by guess as only one possibility '{mod.name}': {mod.path} -> {last_match.path}")
+                mod_to_og_match = ModToOGMatch(last_match, None)
 
     if mod_to_og_match is None:
         print_data += ("Failed to match line\n")
