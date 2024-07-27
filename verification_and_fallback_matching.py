@@ -197,6 +197,19 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         # TODO: This is a silhouette cutout of keiichi. I'm not if just reusing the same image
         # instead of a special silhouette will work, but lets see if it just works.
         'effect/kei' : 'sprites/keiiti/2021/main/kei_ikari1',
+
+        # flow.txt (main menu?)
+        'title/07th-mod' : '<USE_MOD_VERSION>', # 07th-mod logo doesn't change depending on OG mode
+        'title/title3scroll' : '<USE_MOD_VERSION>', # This is gated in the script so you shouldn't see it when using OG sprites anyway
+        'title/rik_alt' : 'title/rik_3f', # Rika sprite for title menu easter egg TODO: need to test this works properly
+
+        # staffroom15 - unused sprites
+        # The below are gated only for OG sprites so they won't be seen anyway
+        # TODO: update hou plus script for OG mode
+        'sprite/aks1_warai_' : '<USE_MOD_VERSION>',
+        'sprite/iri1_warai_' : '<USE_MOD_VERSION>',
+        'sprite/oisi1_2_' : '<USE_MOD_VERSION>',
+        'sprite/ta1_warai_' : '<USE_MOD_VERSION>',
     }
 
     debug_output = []

@@ -144,7 +144,8 @@ name_to_og = {
     KUMI_2: 'mo5',
 
     # Only used in staffroom15?
-    SATOSHI: 'sato',
+    SATOSHI: 'sato', # Is this ever used?
+    SATOSHI: 'satosi', # only used in staffroom15?
     TOMITAKE: 'tomi',
     KASAI: 'kasai',
     AKASAKA: 'aks',
