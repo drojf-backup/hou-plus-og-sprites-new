@@ -440,15 +440,18 @@ def parse_graphics(
     # CG\sprites\sonota\oisi[VARIANTS] and
     # CG\sprites\sonota\tetu[VARIANTS]
     sonota_keys = [
-        ('sprite/oisi', 'sprites/sonota/oisi'),
-        ('sprite/tetu', 'sprites/sonota/tetu')
+        # Sprites
+        ('sprite/oisi', 'sprites/sonota/oisi', True),
+        ('sprite/tetu', 'sprites/sonota/tetu', True),
+        # Backgrounds
+        ('background/ke_shiryou1_02', 'img/dsc000', False), # In OG game, img folder contains various pictures of Ryukishi's room, but they are all mapped to ke_shiryou1_02 in our mod
     ]
     if mod_to_og_match is None:
-        if mod.is_sprite:
-            for mod_key, og_key in sonota_keys:
+        for mod_key, og_key, target_sprites in sonota_keys:
+            if mod.is_sprite == target_sprites:
                 if mod_key in mod.path:
                     for og in og_call_data:
-                        if og.is_sprite and og_key in og.path:
+                        if og.is_sprite == target_sprites and og_key in og.path:
                             mod_to_og_match = ModToOGMatch(og, None)
                             print_data += (f"Matched by 'sonota' special case: {mod_to_og_match}\n")
                             break
