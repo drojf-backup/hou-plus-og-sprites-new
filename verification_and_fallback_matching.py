@@ -175,6 +175,19 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
         'sprite/keisen_shinken_' : 'sprites/keiiti/sifuku_b/kei_3b', # Kei holding bat in action pose - replaced with kei with bat in normal pose
 
         # Sprites Kamikashimashi (outbreak02_1.txt)
+        'portrait/ha1_sakebi_' : 'sprites/hanyu/miko/han_7',
+        'sprite/ta3_hatena_' : 'sprites/takano/tak_9',
+        'sprite/sa8a_akuwarai_a1_' : 'sprites/satoko/sifuku/sa_waraia1',
+        'sprite/une1a_03_' : 'sprites/une/une_14',
+        'sprite/sa1a_odoroki_a1_' : 'sprites/satoko/sa_akirerua1',
+        'sprite/re1a_kaii_a1_' : 'sprites/rena/re_kaiia1',
+        'sprite/sa1a_akuwarai_a1_' : 'sprites/satoko/sa_akuwaraia1',
+        'sprite/me1a_warai_a1_' : 'sprites/mion/me_waraia1',
+
+        # Backgrounds Kamikashimashi (outbreak02_1.txt)
+        'background/kamik_ke_ky1' : 'bg/keisatu/ke_ky1',
+
+        # Effects Kamikashimashi (outbreak02_1.txt)
         'effect/v_hurricane' : '<USE_MOD_VERSION>', # No equivalent mask so just use mod's mask (OG game just draws efe/different_spiral_1a)
         'effect/eye_base_b' : '<USE_MOD_VERSION>',
         'effect/eye_base_r' : '<USE_MOD_VERSION>',
