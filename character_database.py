@@ -146,7 +146,7 @@ name_to_og = {
     # Only used in staffroom15?
     SATOSHI: 'sato',
     TOMITAKE: 'tomi',
-    KASAI: 'kasa',
+    KASAI: 'kasai',
     AKASAKA: 'aks',
 
     # Silhouettes - should these be handled differently?
