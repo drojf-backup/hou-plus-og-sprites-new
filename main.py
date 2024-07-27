@@ -436,6 +436,23 @@ def parse_graphics(
             #             print_data += (f"Matched by matching key in path (anywhere in path): {mod_to_og_match}\n")
             #             break
 
+    # Extra matching specifically for the OG sprites in the 'sonota' folder
+    # CG\sprites\sonota\oisi[VARIANTS] and
+    # CG\sprites\sonota\tetu[VARIANTS]
+    sonota_keys = [
+        ('sprite/oisi', 'sprites/sonota/oisi'),
+        ('sprite/tetu', 'sprites/sonota/tetu')
+    ]
+    if mod_to_og_match is None:
+        if mod.is_sprite:
+            for mod_key, og_key in sonota_keys:
+                if mod_key in mod.path:
+                    for og in og_call_data:
+                        if og.is_sprite and og_key in og.path:
+                            mod_to_og_match = ModToOGMatch(og, None)
+                            print_data += (f"Matched by 'sonota' special case: {mod_to_og_match}\n")
+                            break
+
     # Try matching by same name match
     if mod_to_og_match is None:
         for og in og_call_data:
