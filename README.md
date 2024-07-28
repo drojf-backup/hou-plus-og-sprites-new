@@ -1,5 +1,10 @@
 # hou-plus-og-sprites-new
 
+## Usage
+
+- Run `main.py` to do the majority of the mapping
+- Then run `verification_and_fallback_matching.py` to produce the final output .json database (including fallback entries)
+
 ## Folder/File format for mod DLL to read
 
 Currently mod files are stored in a streamingassets subfolder like OGSprites or OGBackgrounds
