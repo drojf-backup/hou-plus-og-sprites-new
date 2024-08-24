@@ -9,6 +9,27 @@ import voice_util
 
 PRINT_FAILED_MATCHES = False
 
+def normalize_path(path: str) -> str:
+    return str(path).replace('\\', '/').split('HigurashiEp10_Data/StreamingAssets/CG/')[-1]
+
+# Outputs a dictionary, mapping 'last played voice' to another dict.
+# The inner dict maps from mod path -> og path
+def convert_database_to_dict(voice_database: VoiceMatchDatabase) -> dict[str, dict[str, str]]:
+    ret = {}
+    for voice, matches_after_voice in voice_database.db.items():
+        voice = str(voice)
+        matches_per_voice = {}
+
+        for match in matches_after_voice:
+            mod_path = normalize_path(match.mod_path)
+            og_path = normalize_path(match.og_path)
+            matches_per_voice[mod_path] = og_path
+
+        ret[voice] = matches_per_voice
+
+    return ret
+
+
 class FallbackMatch:
     def __init__(self, fallback_match_path: str, source_description: str) -> None:
         self.fallback_match_path = fallback_match_path
@@ -27,6 +48,8 @@ class AllMatchData:
         self.global_fallback = None #type: dict[str, FallbackMatch]
         # modded script name -> fallback dictionary
         self.per_script_fallbacks = {} #type: dict[str, list[PerScriptFallback]]
+        # modded script name -> VoiceMatchDatabase object
+        self.per_script_voice_database = {} #type: dict[str, VoiceMatchDatabase]
 
     def set_global_fallback(self, fallback: dict[str, FallbackMatch]):
         self.global_fallback = fallback
@@ -34,10 +57,12 @@ class AllMatchData:
     def set_per_script_fallback(self, script_name: str, fallback: dict[str, FallbackMatch]):
         self.per_script_fallbacks[script_name] = fallback
 
+    def set_voice_database(self, script_name: str, voice_database: VoiceMatchDatabase):
+        self.per_script_voice_database[script_name] = voice_database
 
-def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch]):
+
+def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch], save_source_info: bool):
     # Convert fallback matching to dict
-    save_source_info = True
     fallback_for_json = {}
 
     for ps3_path, info in fallback.items():
@@ -58,15 +83,22 @@ def save_to_json(object, output_path: str):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(json_string)
 
-def get_match_data_as_plain_dict(match_data: AllMatchData):
+def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool):
     # Collect all script fallbacks into a dict
     script_fallback = {}
     for script_name, per_script_fallback in match_data.per_script_fallbacks.items():
-        script_fallback[script_name] = get_fallback_dict_for_json(per_script_fallback)
+        script_fallback[script_name] = get_fallback_dict_for_json(per_script_fallback, save_source_info=save_debug_info)
+
+    all_voice_database = {}
+    for script_path_object, voice_database in match_data.per_script_voice_database.items():
+        all_voice_database[Path(script_path_object).name] = convert_database_to_dict(voice_database)
 
     return {
-        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback),
+        "comment_paths" : "Note: when looking up paths, paths starting with '<' like <SPECIAL_TEXT_EFFECT>  are special cases. And if a match is 'null' then it means this sprite was never matched.",
+        "comment_lookup" : "To lookup, first check the voice database. Then check the script fallback. Then check the global fallback.",
+        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback, save_source_info=save_debug_info),
         "script_fallback" : script_fallback,
+        "voice_database" : all_voice_database,
     }
 
 
@@ -396,6 +428,8 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
     db_path = common.get_voice_db_path(modded_script_path)
     existing_matches = VoiceMatchDatabase.deserialize(db_path)
 
+    all_match_data.set_voice_database(modded_script_path, existing_matches)
+
     print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
     debug_output, fallback_match_for_chapter = verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
@@ -423,6 +457,8 @@ if not scanned_any_scripts:
 # TODO: add a fallback based purely on statistics over all know matchings.
 # The below only records fallbacks which were actually used, rather than all possible matchings.
 # This is to be used if a new sprite call is added, to avoid having to re-do the matching just for that one sprite call.# Save the merged fallback matching to .json file
+save_debug_info = True
+
 all_match_data.set_global_fallback(merged_fallback_matches)
 
-save_to_json(get_match_data_as_plain_dict(all_match_data), output_folder.joinpath('image_mapping.json'))
+save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info), output_folder.joinpath('mapping.json'))
