@@ -17,6 +17,24 @@ class FallbackMatch:
     def __str__(self) -> str:
         return f"path: {self.fallback_match_path} source: {self.source_description}"
 
+class PerScriptFallback:
+    def __init__(self, script_name: str, fallback_data: dict[str, FallbackMatch]) -> None:
+        self.script_name = script_name
+        self.fallback_data = fallback_data
+
+class AllMatchData:
+    def __init__(self):
+        self.global_fallback = None #type: dict[str, FallbackMatch]
+        # modded script name -> fallback dictionary
+        self.per_script_fallbacks = {} #type: dict[str, list[PerScriptFallback]]
+
+    def set_global_fallback(self, fallback: dict[str, FallbackMatch]):
+        self.global_fallback = fallback
+
+    def set_per_script_fallback(self, script_name: str, fallback: dict[str, FallbackMatch]):
+        self.per_script_fallbacks[script_name] = fallback
+
+
 def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch]):
     # Convert fallback matching to dict
     save_source_info = True
@@ -34,11 +52,22 @@ def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch]):
         "fallback" : fallback_for_json
     }
 
-def save_fallback_to_json(fallback: dict[str, FallbackMatch], output_path: str):
-    json_string = json.dumps(get_fallback_dict_for_json(fallback), sort_keys=True, indent=4)
+def save_to_json(object, output_path: str):
+    json_string = json.dumps(object, sort_keys=True, indent='\t')
 
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(json_string)
+
+def get_match_data_as_plain_dict(match_data: AllMatchData):
+    # Collect all script fallbacks into a dict
+    script_fallback = {}
+    for script_name, per_script_fallback in match_data.per_script_fallbacks.items():
+        script_fallback[script_name] = get_fallback_dict_for_json(per_script_fallback)
+
+    return {
+        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback),
+        "script_fallback" : script_fallback,
+    }
 
 
 ####################  Graphics Regexes ####################
@@ -332,6 +361,8 @@ def collect_sorted_statistics(mod_script_dir: str, pattern: str) -> dict[str, li
 
     return sorted_statistics
 
+all_match_data = AllMatchData()
+
 output_folder = Path('mod_usable_files')
 
 pattern = '*.txt'
@@ -370,7 +401,7 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
     debug_output, fallback_match_for_chapter = verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
 
     # Save the per-chapter fallback to the output path
-    save_fallback_to_json(fallback_match_for_chapter, output_folder.joinpath(f'{Path(modded_script_path).stem}_fallback.json'))
+    all_match_data.set_per_script_fallback(modded_script_path.stem, fallback_match_for_chapter)
 
     merged_fallback_matches |= fallback_match_for_chapter
 
@@ -392,4 +423,6 @@ if not scanned_any_scripts:
 # TODO: add a fallback based purely on statistics over all know matchings.
 # The below only records fallbacks which were actually used, rather than all possible matchings.
 # This is to be used if a new sprite call is added, to avoid having to re-do the matching just for that one sprite call.# Save the merged fallback matching to .json file
-save_fallback_to_json(merged_fallback_matches, output_folder.joinpath('global_fallback.json'))
+all_match_data.set_global_fallback(merged_fallback_matches)
+
+save_to_json(get_match_data_as_plain_dict(all_match_data), output_folder.joinpath('image_mapping.json'))
