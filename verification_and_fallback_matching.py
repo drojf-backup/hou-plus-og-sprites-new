@@ -1,4 +1,5 @@
 
+import json
 import operator
 from pathlib import Path
 import re
@@ -12,6 +13,33 @@ class FallbackMatch:
     def __init__(self, fallback_match_path: str, source_description: str) -> None:
         self.fallback_match_path = fallback_match_path
         self.source_description = source_description
+
+    def __str__(self) -> str:
+        return f"path: {self.fallback_match_path} source: {self.source_description}"
+
+def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch]):
+    # Convert fallback matching to dict
+    save_source_info = True
+    fallback_for_json = {}
+
+    for ps3_path, info in fallback.items():
+        info_dict = {"path": info.fallback_match_path}
+
+        if save_source_info:
+            info_dict["source"] = info.source_description
+
+        fallback_for_json[ps3_path] = info_dict
+
+    return {
+        "fallback" : fallback_for_json
+    }
+
+def save_fallback_to_json(fallback: dict[str, FallbackMatch], output_path: str):
+    json_string = json.dumps(get_fallback_dict_for_json(fallback), sort_keys=True, indent=4)
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(json_string)
+
 
 ####################  Graphics Regexes ####################
 
@@ -88,7 +116,7 @@ def graphics_is_detected_and_mapped(last_voice: str, stripped_path: str, existin
 
     return CheckResult(False, False)
 
-def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase, statistics: dict[str, list[str, int]]) -> list[str]:
+def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], existing_matches: VoiceMatchDatabase, statistics: dict[str, list[str, int]]) -> tuple[list[str], dict[str, FallbackMatch]]:
     with open(mod_script_path, encoding='utf-8') as f:
         all_lines = f.readlines()
 
@@ -225,10 +253,14 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
             match_path = fallback_matching.get(mod_path, None)
             match_source_description = 'Manual Fallback List'
 
+            if match_path == '<USE_MOD_VERSION>':
+                match_path = mod_path
+                match_source_description = 'Manual Fallback List (Use Modded Image)'
+
         if match_path is None:
             if maybe_statistics_for_path:
                 match_path, _match_count = maybe_statistics_for_path[0]
-                match_source_description = f'Statistically most popular previous match ({maybe_statistics_for_path})'
+                match_source_description = f'Popularity ({maybe_statistics_for_path})'
 
         if match_path is not None:
             fallback_matches[mod_path] = FallbackMatch(match_path, match_source_description)
@@ -243,7 +275,7 @@ def verify_one_script(mod_script_path: str, graphics_regexes: list[re.Pattern], 
     else:
         print("PASS: All matches covered by a fallback")
 
-    return debug_output
+    return debug_output, fallback_matches
 
     # TODO: Use facial expression in filename to match sprites
     # TODO: For Busstop, map numbers to facial expression
@@ -300,6 +332,8 @@ def collect_sorted_statistics(mod_script_dir: str, pattern: str) -> dict[str, li
 
     return sorted_statistics
 
+output_folder = Path('mod_usable_files')
+
 pattern = '*.txt'
 statistics_pattern = '*.txt' #'*.txt' # Matching from other scripts will give more averaged results, but this may cause inconsistencies if one script uses one sprite and another uses other sprites
 
@@ -322,6 +356,8 @@ statistics = collect_sorted_statistics(mod_script_dir, statistics_pattern)
 
 output_per_chapter = []
 
+merged_fallback_matches = {} # dict[str, FallbackMatch]
+
 for modded_script_path in Path(mod_script_dir).glob(pattern):
     scanned_any_scripts = True
 
@@ -331,7 +367,12 @@ for modded_script_path in Path(mod_script_dir).glob(pattern):
 
     print(f"Loaded {len(existing_matches.db)} voice sections from [{db_path}]")
 
-    debug_output = verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
+    debug_output, fallback_match_for_chapter = verify_one_script(modded_script_path, graphics_regexes, existing_matches, statistics)
+
+    # Save the per-chapter fallback to the output path
+    save_fallback_to_json(fallback_match_for_chapter, output_folder.joinpath(f'{Path(modded_script_path).stem}_fallback.json'))
+
+    merged_fallback_matches |= fallback_match_for_chapter
 
     output_per_chapter.append((Path(modded_script_path).stem, debug_output))
 
@@ -347,3 +388,8 @@ for script_name, debug_output_list in output_per_chapter:
 
 if not scanned_any_scripts:
     raise Exception("No files were scanned. Are you sure pattern is correct?")
+
+# TODO: add a fallback based purely on statistics over all know matchings.
+# The below only records fallbacks which were actually used, rather than all possible matchings.
+# This is to be used if a new sprite call is added, to avoid having to re-do the matching just for that one sprite call.# Save the merged fallback matching to .json file
+save_fallback_to_json(merged_fallback_matches, output_folder.joinpath('global_fallback.json'))
