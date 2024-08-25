@@ -17,7 +17,12 @@ def normalize_path(path: str) -> str:
 def convert_database_to_dict(voice_database: VoiceMatchDatabase) -> dict[str, dict[str, str]]:
     ret = {}
     for voice, matches_after_voice in voice_database.db.items():
-        voice = str(voice)
+        # Convert None to the empty string as [null] is an invalid JSON key
+        if voice is None:
+            voice = ""
+        else:
+            voice = str(voice)
+
         matches_per_voice = {}
 
         for match in matches_after_voice:
