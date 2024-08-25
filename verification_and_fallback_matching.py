@@ -96,7 +96,7 @@ def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool
 
     all_voice_database = {}
     for script_path_object, voice_database in match_data.per_script_voice_database.items():
-        all_voice_database[Path(script_path_object).name] = convert_database_to_dict(voice_database)
+        all_voice_database[Path(script_path_object).stem] = convert_database_to_dict(voice_database)
 
     return {
         "comment_paths" : "Note: when looking up paths, paths starting with '<' like <SPECIAL_TEXT_EFFECT>  are special cases. And if a match is 'null' then it means this sprite was never matched.",
