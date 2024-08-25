@@ -71,16 +71,10 @@ def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch], save_source_i
     fallback_for_json = {}
 
     for ps3_path, info in fallback.items():
-        info_dict = {"path": info.fallback_match_path}
+        fallback_for_json[ps3_path] = info.fallback_match_path
+        fallback_for_json[ps3_path + "_source"] = info.source_description
 
-        if save_source_info:
-            info_dict["source"] = info.source_description
-
-        fallback_for_json[ps3_path] = info_dict
-
-    return {
-        "fallback" : fallback_for_json
-    }
+    return fallback_for_json
 
 def save_to_json(object, output_path: str):
     json_string = json.dumps(object, sort_keys=True, indent='\t')
