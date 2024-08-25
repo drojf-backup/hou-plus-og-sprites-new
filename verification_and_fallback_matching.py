@@ -1,6 +1,7 @@
 
 import json
 import operator
+import os
 from pathlib import Path
 import re
 import common
@@ -12,9 +13,17 @@ PRINT_FAILED_MATCHES = False
 def normalize_path(path: str) -> str:
     return str(path).replace('\\', '/').split('HigurashiEp10_Data/StreamingAssets/CG/')[-1]
 
+def should_output_mapping(ps3_path: str, sprite_mode: bool):
+    is_sprite = ps3_path.startswith('sprite/')
+
+    if sprite_mode:
+        return is_sprite
+    else:
+        return not is_sprite
+
 # Outputs a dictionary, mapping 'last played voice' to another dict.
 # The inner dict maps from mod path -> og path
-def convert_database_to_dict(voice_database: VoiceMatchDatabase) -> dict[str, dict[str, str]]:
+def convert_database_to_dict(voice_database: VoiceMatchDatabase, sprite_mode: bool) -> dict[str, dict[str, str]]:
     ret = {}
     for voice, matches_after_voice in voice_database.db.items():
         # Convert None to the empty string as [null] is an invalid JSON key
@@ -28,7 +37,8 @@ def convert_database_to_dict(voice_database: VoiceMatchDatabase) -> dict[str, di
         for match in matches_after_voice:
             mod_path = normalize_path(match.mod_path)
             og_path = normalize_path(match.og_path)
-            matches_per_voice[mod_path] = og_path
+            if should_output_mapping(mod_path, sprite_mode):
+                matches_per_voice[mod_path] = og_path
 
         ret[voice] = matches_per_voice
 
@@ -66,13 +76,15 @@ class AllMatchData:
         self.per_script_voice_database[script_name] = voice_database
 
 
-def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch], save_source_info: bool):
+def get_fallback_dict_for_json(fallback: dict[str, FallbackMatch], save_source_info: bool, sprite_mode: bool):
     # Convert fallback matching to dict
     fallback_for_json = {}
 
     for ps3_path, info in fallback.items():
-        fallback_for_json[ps3_path] = info.fallback_match_path
-        fallback_for_json[ps3_path + "_source"] = info.source_description
+        if should_output_mapping(ps3_path, sprite_mode):
+            fallback_for_json[ps3_path] = info.fallback_match_path
+            if save_source_info:
+                fallback_for_json[ps3_path + "_source"] = info.source_description
 
     return fallback_for_json
 
@@ -82,20 +94,20 @@ def save_to_json(object, output_path: str):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(json_string)
 
-def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool):
+def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool, sprite_mode: bool):
     # Collect all script fallbacks into a dict
     script_fallback = {}
     for script_name, per_script_fallback in match_data.per_script_fallbacks.items():
-        script_fallback[script_name] = get_fallback_dict_for_json(per_script_fallback, save_source_info=save_debug_info)
+        script_fallback[script_name] = get_fallback_dict_for_json(per_script_fallback, save_source_info=save_debug_info, sprite_mode=sprite_mode)
 
     all_voice_database = {}
     for script_path_object, voice_database in match_data.per_script_voice_database.items():
-        all_voice_database[Path(script_path_object).stem] = convert_database_to_dict(voice_database)
+        all_voice_database[Path(script_path_object).stem] = convert_database_to_dict(voice_database, sprite_mode)
 
     return {
         "comment_paths" : "Note: when looking up paths, paths starting with '<' like <SPECIAL_TEXT_EFFECT>  are special cases. And if a match is 'null' then it means this sprite was never matched.",
         "comment_lookup" : "To lookup, first check the voice database. Then check the script fallback. Then check the global fallback.",
-        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback, save_source_info=save_debug_info),
+        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback, save_source_info=save_debug_info, sprite_mode=sprite_mode),
         "script_fallback" : script_fallback,
         "voice_database" : all_voice_database,
     }
@@ -460,4 +472,13 @@ save_debug_info = True
 
 all_match_data.set_global_fallback(merged_fallback_matches)
 
-save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info), output_folder.joinpath('mapping.json'))
+sprites_output_path = output_folder.joinpath('OGSpritesMapping', 'mapping.json')
+backgrounds_output_path = output_folder.joinpath('OGBackgroundsMapping', 'mapping.json')
+
+os.makedirs(Path(sprites_output_path).parent, exist_ok=True)
+os.makedirs(Path(backgrounds_output_path).parent, exist_ok=True)
+
+save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info, sprite_mode=True), sprites_output_path)
+save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info, sprite_mode=False), backgrounds_output_path)
+
+# Output separate mapping.json files for OGBackgrounds and OGSprites
