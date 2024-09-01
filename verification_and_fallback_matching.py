@@ -94,6 +94,26 @@ def save_to_json(object, output_path: str):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(json_string)
 
+# While doing this includes redundant data, this allows us to change the sprite mapping later if we find one of the global fallbacks is wrong
+def build_global_fallback(voice_database: dict[str, dict[str, dict[str, str]]], script_fallback: dict[str, dict[str, str]], global_fallback: dict[str, str]):
+
+    final_global_fallback = {} #type: dict[str, str]
+
+    # Lowest priority is per-script mapping
+    for script, voiceDict in voice_database.items():
+        for voice, mapping in voiceDict.items():
+            final_global_fallback.update(mapping)
+
+    # Next priority is per-script fallback
+    for script, mapping in script_fallback.items():
+        final_global_fallback.update(mapping)
+
+    # Highest priority is global fallback, which overwrites all other entries
+    final_global_fallback.update(global_fallback)
+
+    return final_global_fallback
+
+
 def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool, sprite_mode: bool):
     # Collect all script fallbacks into a dict
     script_fallback = {}
@@ -104,10 +124,14 @@ def get_match_data_as_plain_dict(match_data: AllMatchData, save_debug_info: bool
     for script_path_object, voice_database in match_data.per_script_voice_database.items():
         all_voice_database[Path(script_path_object).stem] = convert_database_to_dict(voice_database, sprite_mode)
 
+    global_fallback = get_fallback_dict_for_json(match_data.global_fallback, save_source_info=save_debug_info, sprite_mode=sprite_mode)
+
+    final_global_fallback = build_global_fallback(all_voice_database, script_fallback, global_fallback)
+
     return {
         "comment_paths" : "Note: when looking up paths, paths starting with '<' like <SPECIAL_TEXT_EFFECT>  are special cases. And if a match is 'null' then it means this sprite was never matched.",
         "comment_lookup" : "To lookup, first check the voice database. Then check the script fallback. Then check the global fallback.",
-        "global_fallback" : get_fallback_dict_for_json(match_data.global_fallback, save_source_info=save_debug_info, sprite_mode=sprite_mode),
+        "global_fallback" : final_global_fallback,
         "script_fallback" : script_fallback,
         "voice_database" : all_voice_database,
     }
@@ -468,10 +492,11 @@ if not scanned_any_scripts:
 # TODO: add a fallback based purely on statistics over all know matchings.
 # The below only records fallbacks which were actually used, rather than all possible matchings.
 # This is to be used if a new sprite call is added, to avoid having to re-do the matching just for that one sprite call.# Save the merged fallback matching to .json file
-save_debug_info = True
+save_debug_info = False
 
 all_match_data.set_global_fallback(merged_fallback_matches)
 
+# Output separate mapping.json files for OGBackgrounds and OGSprites
 sprites_output_path = output_folder.joinpath('OGSpritesMapping', 'mapping.json')
 backgrounds_output_path = output_folder.joinpath('OGBackgroundsMapping', 'mapping.json')
 
@@ -481,4 +506,3 @@ os.makedirs(Path(backgrounds_output_path).parent, exist_ok=True)
 save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info, sprite_mode=True), sprites_output_path)
 save_to_json(get_match_data_as_plain_dict(all_match_data, save_debug_info, sprite_mode=False), backgrounds_output_path)
 
-# Output separate mapping.json files for OGBackgrounds and OGSprites
