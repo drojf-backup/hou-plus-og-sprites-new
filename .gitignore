@@ -4,3 +4,4 @@ stats_temp/
 __pycache__/
 script_with_debug/
 voice_db/
+backup/
